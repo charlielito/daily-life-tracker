@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  macroEntries      MacroEntry[]
+  intestinalEntries IntestinalEntry[]
+
+  @@map("users")
+}
+
+model MacroEntry {
+  id               String   @id @default(cuid())
+  userId           String
+  description      String
+  imageUrl         String?
+  hour             DateTime
+  date             DateTime
+  calculatedMacros String? // JSON stored as string in SQLite
+  weight           Float? // Daily weight in kg
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("macro_entries")
+}
+
+model IntestinalEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  hour        DateTime
+  consistency String // Bristol Stool Scale (1-7)
+  color       String
+  painLevel   Int // 0-10 scale
+  notes       String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("intestinal_entries")
+} 
