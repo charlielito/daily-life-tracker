@@ -13,7 +13,7 @@ export const intestinalRouter = createTRPCRouter({
         color: z.string().min(1),
         painLevel: z.number().min(0).max(10),
         notes: z.string().optional(),
-        imageUrl: z.string().optional(),
+        imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -34,6 +34,88 @@ export const intestinalRouter = createTRPCRouter({
       });
 
       return entry;
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        date: z.date(),
+        hour: z.date(),
+        consistency: z.string().min(1),
+        color: z.string().min(1),
+        painLevel: z.number().min(0).max(10),
+        notes: z.string().optional(),
+        imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Verify the entry belongs to the user
+      const existingEntry = await ctx.db.intestinalEntry.findFirst({
+        where: { id: input.id, userId },
+      });
+
+      if (!existingEntry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or access denied",
+        });
+      }
+
+      const updatedEntry = await ctx.db.intestinalEntry.update({
+        where: { id: input.id },
+        data: {
+          date: input.date,
+          hour: input.hour,
+          consistency: input.consistency,
+          color: input.color,
+          painLevel: input.painLevel,
+          notes: input.notes,
+          imageUrl: input.imageUrl,
+        },
+      });
+
+      return updatedEntry;
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Verify the entry belongs to the user before deleting
+      const entry = await ctx.db.intestinalEntry.findFirst({
+        where: { id: input.id, userId },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or access denied",
+        });
+      }
+
+      await ctx.db.intestinalEntry.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
     }),
 
   getToday: protectedProcedure
@@ -90,73 +172,6 @@ export const intestinalRouter = createTRPCRouter({
           },
         },
         orderBy: { hour: "asc" },
-      });
-    }),
-
-  update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        consistency: z.string().optional(),
-        color: z.string().optional(),
-        painLevel: z.number().min(0).max(10).optional(),
-        notes: z.string().optional(),
-        imageUrl: z.string().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      if (!ctx.session?.user?.id) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User not authenticated",
-        });
-      }
-
-      const userId = ctx.session.user.id;
-      const { id, ...updateData } = input;
-
-      const entry = await ctx.db.intestinalEntry.findUnique({
-        where: { id },
-      });
-
-      if (!entry || entry.userId !== userId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found",
-        });
-      }
-
-      return ctx.db.intestinalEntry.update({
-        where: { id },
-        data: updateData,
-      });
-    }),
-
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      if (!ctx.session?.user?.id) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User not authenticated",
-        });
-      }
-
-      const userId = ctx.session.user.id;
-
-      const entry = await ctx.db.intestinalEntry.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!entry || entry.userId !== userId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found",
-        });
-      }
-
-      return ctx.db.intestinalEntry.delete({
-        where: { id: input.id },
       });
     }),
 }); 

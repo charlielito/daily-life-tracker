@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
+import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 interface FoodFormData {
@@ -27,6 +29,8 @@ export default function FoodPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -76,6 +80,28 @@ export default function FoodPage() {
     },
   });
 
+  const updateMacroEntry = api.macros.update.useMutation({
+    onSuccess: () => {
+      utils.macros.getToday.invalidate();
+      setIsEditModalOpen(false);
+      setEditingEntry(null);
+    },
+    onError: (error) => {
+      console.error("Failed to update macro entry:", error);
+    },
+  });
+
+  const deleteMacroEntry = api.macros.delete.useMutation({
+    onSuccess: () => {
+      utils.macros.getToday.invalidate();
+      setIsEditModalOpen(false);
+      setEditingEntry(null);
+    },
+    onError: (error) => {
+      console.error("Failed to delete macro entry:", error);
+    },
+  });
+
   const { data: dayMacros = [], isLoading } = api.macros.getToday.useQuery(
     { date: selectedDate },
     { enabled: !!session }
@@ -100,6 +126,21 @@ export default function FoodPage() {
       weight,
       imageUrl: uploadedImageUrl, // Include the uploaded image URL
     });
+  };
+
+  const handleEditEntry = (entry: any) => {
+    setEditingEntry(entry);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (data: any) => {
+    updateMacroEntry.mutate(data);
+  };
+
+  const handleDeleteEntry = () => {
+    if (editingEntry) {
+      deleteMacroEntry.mutate({ id: editingEntry.id });
+    }
   };
 
   const handleImageUpload = (imageUrl: string) => {
@@ -308,23 +349,37 @@ export default function FoodPage() {
                     <div key={entry.id} className="border-b pb-4 last:border-b-0">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <p className="font-medium">{entry.description}</p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(entry.hour), "h:mm a")}
-                            {entry.weight && ` • Weight: ${entry.weight}kg`}
-                          </p>
-                        </div>
-                        {/* Display image if available */}
-                        {entry.imageUrl && (
-                          <div className="ml-3 relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                            <Image
-                              src={entry.imageUrl}
-                              alt="Meal photo"
-                              fill
-                              className="object-cover"
-                            />
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium">{entry.description}</p>
+                              <p className="text-sm text-gray-500">
+                                {format(new Date(entry.hour), "h:mm a")}
+                                {entry.weight && ` • Weight: ${entry.weight}kg`}
+                              </p>
+                            </div>
+                            {/* Display image if available */}
+                            {entry.imageUrl && (
+                              <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                                <Image
+                                  src={entry.imageUrl}
+                                  alt="Meal photo"
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                        {/* Edit/Delete buttons */}
+                        <div className="flex gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditEntry(entry)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       {entry.calculatedMacros ? (
                         <div className="grid grid-cols-4 gap-2 mt-2 text-sm">
@@ -366,6 +421,20 @@ export default function FoodPage() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Entry Modal */}
+      <EditEntryModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingEntry(null);
+        }}
+        onSave={handleSaveEdit}
+        onDelete={handleDeleteEntry}
+        entry={editingEntry}
+        type="food"
+        isLoading={updateMacroEntry.isLoading || deleteMacroEntry.isLoading}
+      />
     </div>
   );
 } 

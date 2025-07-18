@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
+import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 interface HealthFormData {
@@ -43,6 +45,8 @@ export default function HealthPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -96,6 +100,28 @@ export default function HealthPage() {
     },
   });
 
+  const updateHealthEntry = api.intestinal.update.useMutation({
+    onSuccess: () => {
+      utils.intestinal.getToday.invalidate();
+      setIsEditModalOpen(false);
+      setEditingEntry(null);
+    },
+    onError: (error) => {
+      console.error("Failed to update health entry:", error);
+    },
+  });
+
+  const deleteHealthEntry = api.intestinal.delete.useMutation({
+    onSuccess: () => {
+      utils.intestinal.getToday.invalidate();
+      setIsEditModalOpen(false);
+      setEditingEntry(null);
+    },
+    onError: (error) => {
+      console.error("Failed to delete health entry:", error);
+    },
+  });
+
   const { data: dayEntries = [], isLoading } = api.intestinal.getToday.useQuery(
     { date: selectedDate },
     { enabled: !!session }
@@ -119,6 +145,21 @@ export default function HealthPage() {
       notes: data.notes,
       imageUrl: uploadedImageUrl, // Include the uploaded image URL
     });
+  };
+
+  const handleEditEntry = (entry: any) => {
+    setEditingEntry(entry);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (data: any) => {
+    updateHealthEntry.mutate(data);
+  };
+
+  const handleDeleteEntry = () => {
+    if (editingEntry) {
+      deleteHealthEntry.mutate({ id: editingEntry.id });
+    }
   };
 
   const handleImageUpload = (imageUrl: string) => {
@@ -350,37 +391,53 @@ export default function HealthPage() {
                     <div key={entry.id} className="border-b pb-4 last:border-b-0">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <p className="font-medium">
-                            Bristol Scale Type {entry.consistency}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(entry.hour), "h:mm a")}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{entry.color}</div>
-                            <div className="text-xs text-gray-500">
-                              Pain: {entry.painLevel}/10
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                Bristol Scale Type {entry.consistency}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {format(new Date(entry.hour), "h:mm a")}
+                              </p>
                             </div>
+                            {/* Display image if available */}
+                            {entry.imageUrl && (
+                              <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                                <Image
+                                  src={entry.imageUrl}
+                                  alt="Health entry photo"
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
                           </div>
-                          {/* Display image if available */}
-                          {entry.imageUrl && (
-                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                              <Image
-                                src={entry.imageUrl}
-                                alt="Health entry photo"
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
+                        </div>
+                        {/* Edit button */}
+                        <div className="flex gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditEntry(entry)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
                       {/* Bristol Scale Description */}
                       <div className="text-xs text-gray-600 mb-2">
                         {BRISTOL_SCALE.find(scale => scale.value === entry.consistency)?.label}
+                      </div>
+
+                      {/* Health details */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{entry.color}</div>
+                          <div className="text-xs text-gray-500">
+                            Pain: {entry.painLevel}/10
+                          </div>
+                        </div>
                       </div>
 
                       {/* Pain Level Indicator */}
@@ -430,6 +487,20 @@ export default function HealthPage() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Entry Modal */}
+      <EditEntryModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingEntry(null);
+        }}
+        onSave={handleSaveEdit}
+        onDelete={handleDeleteEntry}
+        entry={editingEntry}
+        type="health"
+        isLoading={updateHealthEntry.isLoading || deleteHealthEntry.isLoading}
+      />
     </div>
   );
 } 
