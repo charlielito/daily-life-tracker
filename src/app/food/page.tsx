@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { format } from "date-fns";
+import Image from "next/image";
 
 interface FoodFormData {
   description: string;
@@ -24,6 +26,7 @@ export default function FoodPage() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -63,6 +66,7 @@ export default function FoodPage() {
         hour: format(new Date(), "HH:mm"),
         weight: "",
       });
+      setUploadedImageUrl(undefined); // Clear the uploaded image
       utils.macros.getToday.invalidate();
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); // Hide success message after 3 seconds
@@ -94,7 +98,16 @@ export default function FoodPage() {
       hour: mealTime,
       date: mealDate,
       weight,
+      imageUrl: uploadedImageUrl, // Include the uploaded image URL
     });
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setUploadedImageUrl(imageUrl);
+  };
+
+  const handleImageRemove = () => {
+    setUploadedImageUrl(undefined);
   };
 
   if (status === "loading") {
@@ -198,6 +211,15 @@ export default function FoodPage() {
                 )}
               </div>
 
+              {/* Image Upload */}
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                onImageRemove={handleImageRemove}
+                currentImage={uploadedImageUrl}
+                label="Food Photo (Optional)"
+                disabled={createMacroEntry.isLoading}
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="hour">Time</Label>
                 <Input
@@ -285,13 +307,24 @@ export default function FoodPage() {
                   {dayMacros.map((entry) => (
                     <div key={entry.id} className="border-b pb-4 last:border-b-0">
                       <div className="flex justify-between items-start mb-2">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">{entry.description}</p>
                           <p className="text-sm text-gray-500">
                             {format(new Date(entry.hour), "h:mm a")}
                             {entry.weight && ` • Weight: ${entry.weight}kg`}
                           </p>
                         </div>
+                        {/* Display image if available */}
+                        {entry.imageUrl && (
+                          <div className="ml-3 relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                            <Image
+                              src={entry.imageUrl}
+                              alt="Meal photo"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
                       </div>
                       {entry.calculatedMacros ? (
                         <div className="grid grid-cols-4 gap-2 mt-2 text-sm">

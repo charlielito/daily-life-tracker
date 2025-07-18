@@ -61,9 +61,10 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Health tracking page with Bristol Stool Scale**
 - [x] ✅ **Weight tracking integration**
 - [x] ✅ **Real-time data updates and daily summaries**
+- [x] ✅ **Image upload functionality with Cloudinary**
 
-### Phase 2 (Next Steps)
-- [ ] 🚧 Image upload functionality with Cloudinary
+### Phase 2 (In Progress)
+- [x] ✅ Image upload functionality with Cloudinary (file system + camera)
 - [ ] 🚧 Data editing capabilities (edit/delete entries)
 - [ ] 🚧 Data visualization and trends
 - [ ] 🚧 Weekly/monthly summaries
@@ -164,13 +165,15 @@ CLOUDINARY_API_SECRET="your-api-secret"
 - Export data for external analysis tools
 
 ## 🧪 Current Status
-**🎉 MVP COMPLETE AND WORKING!**
+**🎉 MVP+ COMPLETE AND WORKING!**
 
 The app is fully functional with:
 - ✅ Complete authentication system
 - ✅ Working dashboard with daily overview
 - ✅ Food tracking with AI-powered macro calculation
 - ✅ Health monitoring with Bristol Stool Scale
+- ✅ Image upload for both food and health entries (file system + camera)
+- ✅ Enhanced AI macro calculation using food images
 - ✅ SQLite database storing all data locally
 - ✅ Modern, responsive UI
 - ✅ Type-safe end-to-end communication
@@ -182,8 +185,10 @@ The app is fully functional with:
 1. **Sign up** at `/auth/signup`
 2. **Sign in** at `/auth/signin`
 3. **Track meals** with automatic macro calculation
-4. **Monitor health** using medical-grade Bristol Stool Scale
-5. **View daily summaries** on the dashboard
-6. **Track weight** with meal entries
+4. **Upload food photos** from device or camera for better macro accuracy
+5. **Monitor health** using medical-grade Bristol Stool Scale
+6. **Add health photos** for documentation
+7. **View daily summaries** on the dashboard
+8. **Track weight** with meal entries
 
-**Next phase**: Add image uploads, data editing, and advanced analytics! 
+**Next phase**: Add data editing, advanced analytics, and data visualization! 

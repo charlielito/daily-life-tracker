@@ -12,7 +12,7 @@ export const env = createEnv({
     GOOGLE_AI_API_KEY: z.string().min(1),
   },
   client: {
-    // Add client-side env vars here if needed
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -22,5 +22,6 @@ export const env = createEnv({
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     GOOGLE_AI_API_KEY: process.env.GOOGLE_AI_API_KEY,
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   },
 }); 

@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { format } from "date-fns";
+import Image from "next/image";
 
 interface HealthFormData {
   date: string;
@@ -40,6 +42,7 @@ export default function HealthPage() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -83,6 +86,7 @@ export default function HealthPage() {
         painLevel: 0,
         notes: "",
       });
+      setUploadedImageUrl(undefined); // Clear the uploaded image
       utils.intestinal.getToday.invalidate();
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); // Hide success message after 3 seconds
@@ -113,7 +117,16 @@ export default function HealthPage() {
       color: data.color,
       painLevel: data.painLevel,
       notes: data.notes,
+      imageUrl: uploadedImageUrl, // Include the uploaded image URL
     });
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setUploadedImageUrl(imageUrl);
+  };
+
+  const handleImageRemove = () => {
+    setUploadedImageUrl(undefined);
   };
 
   if (status === "loading") {
@@ -268,6 +281,15 @@ export default function HealthPage() {
                 />
               </div>
 
+              {/* Image Upload */}
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                onImageRemove={handleImageRemove}
+                currentImage={uploadedImageUrl}
+                label="Health Photo (Optional)"
+                disabled={createHealthEntry.isLoading}
+              />
+
               <Button 
                 type="submit" 
                 className="w-full" 
@@ -326,7 +348,7 @@ export default function HealthPage() {
                   {dayEntries.map((entry) => (
                     <div key={entry.id} className="border-b pb-4 last:border-b-0">
                       <div className="flex justify-between items-start mb-2">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">
                             Bristol Scale Type {entry.consistency}
                           </p>
@@ -334,11 +356,24 @@ export default function HealthPage() {
                             {format(new Date(entry.hour), "h:mm a")}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">{entry.color}</div>
-                          <div className="text-xs text-gray-500">
-                            Pain: {entry.painLevel}/10
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-sm font-medium">{entry.color}</div>
+                            <div className="text-xs text-gray-500">
+                              Pain: {entry.painLevel}/10
+                            </div>
                           </div>
+                          {/* Display image if available */}
+                          {entry.imageUrl && (
+                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                              <Image
+                                src={entry.imageUrl}
+                                alt="Health entry photo"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                       

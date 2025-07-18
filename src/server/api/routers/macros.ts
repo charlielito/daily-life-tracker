@@ -46,7 +46,15 @@ export const macrosRouter = createTRPCRouter({
         Estimate reasonable values based on typical portions.`;
 
         if (input.imageUrl) {
-          prompt += ` An image is also provided that shows the food.`;
+          prompt += ` 
+
+IMPORTANT: An image of the food is also provided. Please use both the description AND the visual information from the image to provide more accurate macro calculations. Look at the image to:
+- Estimate portion sizes more accurately
+- Identify ingredients that might not be mentioned in the description
+- Adjust calculations based on visual cooking methods (fried vs grilled, etc.)
+- Consider any sides, sauces, or garnishes visible in the image
+
+Analyze the image at: ${input.imageUrl}`;
         }
 
         const result = await model.generateContent(prompt);
