@@ -265,6 +265,7 @@ export default function HealthPage() {
                 />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>0 - No pain</span>
+                  <span className="font-medium text-gray-700">Current: {watch("painLevel")}</span>
                   <span>10 - Severe pain</span>
                 </div>
                 {errors.painLevel && (

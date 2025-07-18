@@ -304,16 +304,36 @@ export default function DashboardPage() {
                 {todayIntestinal.slice(-3).reverse().map((entry) => (
                   <div key={entry.id} className="border-b pb-3 last:border-b-0">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-sm">Bristol Scale Type {entry.consistency}</p>
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(entry.hour), "h:mm a")}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs font-medium text-gray-700">{entry.color}</div>
-                        <div className="text-xs text-gray-500">
-                          Pain: {entry.painLevel}/10
+                      <div className="flex-1">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Bristol Scale Type {entry.consistency}</p>
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(entry.hour), "h:mm a")}
+                            </p>
+                          </div>
+                          {/* Small image thumbnail */}
+                          {entry.imageUrl && (
+                            <div className="relative w-10 h-10 rounded-md overflow-hidden border border-gray-200 flex-shrink-0">
+                              <Image
+                                src={entry.imageUrl}
+                                alt="Health entry"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        {/* Health details */}
+                        <div className="flex gap-2 mt-2">
+                          <div className="text-center bg-gray-50 px-2 py-1 rounded text-xs">
+                            <div className="font-medium text-gray-700">{entry.color}</div>
+                            <div className="text-[10px] text-gray-600">color</div>
+                          </div>
+                          <div className="text-center bg-red-50 px-2 py-1 rounded text-xs">
+                            <div className="font-medium text-red-700">{entry.painLevel}/10</div>
+                            <div className="text-[10px] text-red-600">pain</div>
+                          </div>
                         </div>
                       </div>
                     </div>
