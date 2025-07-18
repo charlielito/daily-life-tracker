@@ -9,6 +9,7 @@ import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import Image from "next/image";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -215,19 +216,60 @@ export default function DashboardPage() {
                   <div key={entry.id} className="border-b pb-3 last:border-b-0">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{entry.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(entry.hour), "h:mm a")}
-                        </p>
-                      </div>
-                      {entry.calculatedMacros && (
-                        <div className="text-xs text-gray-600 text-right">
-                          <div className="font-medium">{Math.round(entry.calculatedMacros.calories)} cal</div>
-                          <div className="text-gray-500">
-                            P:{Math.round(entry.calculatedMacros.protein)}g
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{entry.description}</p>
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(entry.hour), "h:mm a")}
+                              {entry.weight && ` • ${entry.weight}kg`}
+                            </p>
                           </div>
+                          {/* Small image thumbnail */}
+                          {entry.imageUrl && (
+                            <div className="relative w-10 h-10 rounded-md overflow-hidden border border-gray-200 flex-shrink-0">
+                              <Image
+                                src={entry.imageUrl}
+                                alt="Meal"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
+                        {/* Macros display */}
+                        {entry.calculatedMacros ? (
+                          <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
+                            <div className="text-center bg-blue-50 px-1 py-1 rounded">
+                              <div className="font-medium text-blue-700">
+                                {Math.round(entry.calculatedMacros.calories)}
+                              </div>
+                              <div className="text-[10px] text-blue-600">cal</div>
+                            </div>
+                            <div className="text-center bg-green-50 px-1 py-1 rounded">
+                              <div className="font-medium text-green-700">
+                                {Math.round(entry.calculatedMacros.protein)}g
+                              </div>
+                              <div className="text-[10px] text-green-600">protein</div>
+                            </div>
+                            <div className="text-center bg-yellow-50 px-1 py-1 rounded">
+                              <div className="font-medium text-yellow-700">
+                                {Math.round(entry.calculatedMacros.carbs)}g
+                              </div>
+                              <div className="text-[10px] text-yellow-600">carbs</div>
+                            </div>
+                            <div className="text-center bg-red-50 px-1 py-1 rounded">
+                              <div className="font-medium text-red-700">
+                                {Math.round(entry.calculatedMacros.fat)}g
+                              </div>
+                              <div className="text-[10px] text-red-600">fat</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 italic mt-1">
+                            Calculating macros...
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
