@@ -17,6 +17,13 @@ export const intestinalRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
 
       const entry = await ctx.db.intestinalEntry.create({
@@ -32,6 +39,13 @@ export const intestinalRouter = createTRPCRouter({
   getToday: protectedProcedure
     .input(z.object({ date: z.date() }))
     .query(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
       const startOfDay = new Date(input.date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -58,6 +72,13 @@ export const intestinalRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
 
       return ctx.db.intestinalEntry.findMany({
@@ -84,6 +105,13 @@ export const intestinalRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
       const { id, ...updateData } = input;
 
@@ -107,6 +135,13 @@ export const intestinalRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
 
       const entry = await ctx.db.intestinalEntry.findUnique({

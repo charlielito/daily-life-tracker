@@ -1,8 +1,40 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+    if (session) {
+      router.push("/dashboard");
+      return;
+    }
+  }, [session, status, router]);
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, they'll be redirected, so don't show content
+  if (session) {
+    return null;
+  }
+
+  // Show landing page only for unauthenticated users
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
@@ -24,9 +56,12 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/food">
-              <Button className="w-full">Track Food</Button>
-            </Link>
+            <p className="text-sm text-gray-600">
+              • AI-powered macro calculation
+              • Daily nutrition summaries
+              • Weight tracking
+              • Meal history and patterns
+            </p>
           </CardContent>
         </Card>
 
@@ -40,9 +75,12 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/health">
-              <Button className="w-full">Log Health</Button>
-            </Link>
+            <p className="text-sm text-gray-600">
+              • Bristol Stool Scale tracking
+              • Pain level assessment
+              • Color and consistency logs
+              • Health pattern analysis
+            </p>
           </CardContent>
         </Card>
 
@@ -56,21 +94,32 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/analytics">
-              <Button className="w-full" variant="secondary">
-                View Analytics
-              </Button>
-            </Link>
+            <p className="text-sm text-gray-600">
+              • Data correlation analysis
+              • Historical trends
+              • Health insights
+              • Export capabilities
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="text-center">
-        <Link href="/auth/signin">
-          <Button variant="outline" size="lg">
-            Sign In to Get Started
-          </Button>
-        </Link>
+      <div className="text-center space-y-4">
+        <div className="space-x-4">
+          <Link href="/auth/signup">
+            <Button size="lg">
+              Get Started - Sign Up
+            </Button>
+          </Link>
+          <Link href="/auth/signin">
+            <Button variant="outline" size="lg">
+              Sign In
+            </Button>
+          </Link>
+        </div>
+        <p className="text-sm text-gray-500">
+          Start tracking your daily health metrics today!
+        </p>
       </div>
     </div>
   );

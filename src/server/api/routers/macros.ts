@@ -15,14 +15,29 @@ export const macrosRouter = createTRPCRouter({
         imageUrl: z.string().optional(),
         hour: z.date(),
         date: z.date(),
-        weight: z.number().optional(),
+        weight: z.preprocess((val) => {
+          // Handle empty string and NaN cases for optional number fields
+          if (val === "" || val === null || val === undefined) return undefined;
+          const num = Number(val);
+          return isNaN(num) ? undefined : num;
+        }, z.number().positive().optional()),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      console.log("Session in macros.create:", ctx.session);
+      console.log("User ID:", ctx.session?.user?.id);
+      
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
 
       // Calculate macros using AI
-      let calculatedMacros: string | null = null;
+      let calculatedMacros: string | undefined = undefined;
       try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
@@ -71,6 +86,13 @@ export const macrosRouter = createTRPCRouter({
   getToday: protectedProcedure
     .input(z.object({ date: z.date() }))
     .query(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
       const startOfDay = new Date(input.date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -110,6 +132,13 @@ export const macrosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
       const { id, calculatedMacros, ...updateData } = input;
 
@@ -142,6 +171,13 @@ export const macrosRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
       const userId = ctx.session.user.id;
 
       const entry = await ctx.db.macroEntry.findUnique({
