@@ -24,7 +24,6 @@ interface FoodFormData {
   description: string;
   date: string;
   hour: string;
-  weight?: string;
 }
 
 interface HealthFormData {
@@ -67,7 +66,6 @@ export function EditEntryModal({
       description: entry?.description || "",
       date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
       hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
-      weight: entry?.weight?.toString() || "",
     } : {
       date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
       hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
@@ -85,7 +83,6 @@ export function EditEntryModal({
         description: entry.description || "",
         date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
         hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
-        weight: entry.weight?.toString() || "",
       } : {
         date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
         hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
@@ -106,14 +103,11 @@ export function EditEntryModal({
 
     if (type === "food") {
       const foodData = data as FoodFormData;
-      const weight = foodData.weight && foodData.weight.trim() !== "" ? parseFloat(foodData.weight) : undefined;
-      
       onSave({
         id: entry.id,
         description: foodData.description,
         date: entryDate,
         hour: entryTime,
-        weight,
         imageUrl: uploadedImageUrl,
       });
     } else {
@@ -198,17 +192,6 @@ export function EditEntryModal({
                   {(errors as any).description && (
                     <p className="text-red-500 text-sm">{(errors as any).description.message}</p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg) - Optional</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.1"
-                    placeholder="e.g., 70.5"
-                    {...register("weight")}
-                  />
                 </div>
               </>
             ) : (

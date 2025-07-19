@@ -8,6 +8,7 @@ import { signOut } from "next-auth/react";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { format } from "date-fns";
 import Image from "next/image";
 
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [today] = useState(new Date());
+  const [showWeightPrompt, setShowWeightPrompt] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -35,6 +37,48 @@ export default function DashboardPage() {
     { date: today },
     { enabled: !!session }
   );
+
+  // Fetch today's weight
+  const { data: todayWeight, isLoading: weightLoading } = api.weight.getByDate.useQuery(
+    { date: today },
+    { enabled: !!session }
+  );
+
+  // Fetch latest weight for fallback
+  const { data: latestWeight } = api.weight.getLatest.useQuery(
+    undefined,
+    { enabled: !!session && !todayWeight }
+  );
+
+  const utils = api.useContext();
+
+  // Weight upsert mutation
+  const upsertWeight = api.weight.upsert.useMutation({
+    onSuccess: () => {
+      utils.weight.getByDate.invalidate();
+      utils.weight.getLatest.invalidate();
+      setShowWeightPrompt(false);
+    },
+    onError: (error) => {
+      console.error("Failed to save weight:", error);
+    },
+  });
+
+  // Check if we should show weight prompt (only for today, and only if no weight exists)
+  useEffect(() => {
+    if (session && !weightLoading && !todayWeight && format(today, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")) {
+      // Show prompt after a short delay to let the dashboard load first
+      const timer = setTimeout(() => setShowWeightPrompt(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [session, weightLoading, todayWeight, today]);
+
+  const handleSaveWeight = (weight: number) => {
+    upsertWeight.mutate({
+      date: today,
+      weight,
+    });
+  };
 
   if (status === "loading") {
     return (
@@ -64,10 +108,9 @@ export default function DashboardPage() {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
-  // Get today's weight (from the most recent entry)
-  const todayWeight = todayMacros
-    .filter(entry => entry.weight)
-    .sort((a, b) => new Date(b.hour).getTime() - new Date(a.hour).getTime())[0]?.weight;
+  // Display weight (today's weight or latest weight)
+  const displayWeight = todayWeight?.weight || latestWeight?.weight;
+  const isLatestWeight = !todayWeight && latestWeight;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -129,9 +172,26 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-800">
-              {todayWeight ? `${todayWeight}kg` : "—"}
+              {displayWeight ? `${displayWeight}kg` : "—"}
             </div>
-            <p className="text-xs text-orange-600 mt-1">latest entry</p>
+            <p className="text-xs text-orange-600 mt-1">
+              {isLatestWeight 
+                ? `from ${format(new Date(latestWeight!.date), "MMM d")}`
+                : todayWeight 
+                  ? "today's weight"
+                  : "no data"
+              }
+            </p>
+            {!todayWeight && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowWeightPrompt(true)}
+                className="mt-1 h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
+              >
+                Add today's weight
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -221,7 +281,6 @@ export default function DashboardPage() {
                             <p className="font-medium text-sm">{entry.description}</p>
                             <p className="text-xs text-gray-500">
                               {format(new Date(entry.hour), "h:mm a")}
-                              {entry.weight && ` • ${entry.weight}kg`}
                             </p>
                           </div>
                           {/* Small image thumbnail */}
@@ -344,6 +403,15 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Weight Prompt Modal */}
+      <WeightPrompt
+        isOpen={showWeightPrompt}
+        onClose={() => setShowWeightPrompt(false)}
+        onSave={handleSaveWeight}
+        isLoading={upsertWeight.isLoading}
+        date={today}
+      />
     </div>
   );
 } 

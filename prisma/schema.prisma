@@ -21,6 +21,7 @@ model User {
   // Relations
   macroEntries      MacroEntry[]
   intestinalEntries IntestinalEntry[]
+  weightEntries     WeightEntry[]
 
   @@map("users")
 }
@@ -33,7 +34,6 @@ model MacroEntry {
   hour             DateTime
   date             DateTime
   calculatedMacros String? // JSON stored as string in SQLite
-  weight           Float? // Daily weight in kg
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -41,6 +41,22 @@ model MacroEntry {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("macro_entries")
+}
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime // Date for the weight entry (one per day)
+  weight    Float    // Weight in kg
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ensure one weight entry per user per day
+  @@unique([userId, date])
+  @@map("weight_entries")
 }
 
 model IntestinalEntry {

@@ -54,12 +54,6 @@ export const macrosRouter = createTRPCRouter({
         imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
         hour: z.date(),
         date: z.date(),
-        weight: z.preprocess((val) => {
-          // Handle empty string and NaN cases for optional number fields
-          if (val === "" || val === null || val === undefined) return undefined;
-          const num = Number(val);
-          return isNaN(num) ? undefined : num;
-        }, z.number().positive().optional()),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -86,7 +80,6 @@ export const macrosRouter = createTRPCRouter({
           hour: input.hour,
           date: input.date,
           calculatedMacros,
-          weight: input.weight,
         },
       });
 
@@ -105,11 +98,6 @@ export const macrosRouter = createTRPCRouter({
         imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
         hour: z.date(),
         date: z.date(),
-        weight: z.preprocess((val) => {
-          if (val === "" || val === null || val === undefined) return undefined;
-          const num = Number(val);
-          return isNaN(num) ? undefined : num;
-        }, z.number().positive().optional()),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -152,7 +140,6 @@ export const macrosRouter = createTRPCRouter({
           hour: input.hour,
           date: input.date,
           calculatedMacros,
-          weight: input.weight,
         },
       });
 

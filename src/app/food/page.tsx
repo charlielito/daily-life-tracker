@@ -20,7 +20,6 @@ interface FoodFormData {
   description: string;
   date: string;
   hour: string;
-  weight?: string; // Keep as string to handle empty values properly
 }
 
 export default function FoodPage() {
@@ -45,7 +44,6 @@ export default function FoodPage() {
     defaultValues: {
       date: format(new Date(), "yyyy-MM-dd"),
       hour: format(new Date(), "HH:mm"),
-      weight: "",
     }
   });
 
@@ -68,7 +66,6 @@ export default function FoodPage() {
         description: "",
         date: format(selectedDate, "yyyy-MM-dd"),
         hour: format(new Date(), "HH:mm"),
-        weight: "",
       });
       setUploadedImageUrl(undefined); // Clear the uploaded image
       utils.macros.getToday.invalidate();
@@ -116,14 +113,10 @@ export default function FoodPage() {
     const mealTime = new Date(year, month - 1, day); // month is 0-indexed
     mealTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    // Convert weight to number or undefined
-    const weight = data.weight && data.weight.trim() !== "" ? parseFloat(data.weight) : undefined;
-
     createMacroEntry.mutate({
       description: data.description,
       hour: mealTime,
       date: mealDate,
-      weight,
       imageUrl: uploadedImageUrl, // Include the uploaded image URL
     });
   };
@@ -273,20 +266,6 @@ export default function FoodPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight (kg) - Optional</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.1"
-                  placeholder="e.g., 70.5"
-                  {...register("weight")}
-                />
-                <p className="text-xs text-gray-500">
-                  Track your daily weight (only needs to be entered once per day)
-                </p>
-              </div>
-
               <Button 
                 type="submit" 
                 className="w-full" 
@@ -354,7 +333,6 @@ export default function FoodPage() {
                               <p className="font-medium">{entry.description}</p>
                               <p className="text-sm text-gray-500">
                                 {format(new Date(entry.hour), "h:mm a")}
-                                {entry.weight && ` • Weight: ${entry.weight}kg`}
                               </p>
                             </div>
                             {/* Display image if available */}
