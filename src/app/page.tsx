@@ -105,10 +105,10 @@ export default function HomePage() {
       </div>
 
       <div className="text-center space-y-4">
-        <div className="space-x-4">
+        <div className="flex gap-4 justify-center">
           <Link href="/auth/signup">
             <Button size="lg">
-              Get Started - Sign Up
+              Get Started Free
             </Button>
           </Link>
           <Link href="/auth/signin">
@@ -117,8 +117,9 @@ export default function HomePage() {
             </Button>
           </Link>
         </div>
-        <p className="text-sm text-gray-500">
-          Start tracking your daily health metrics today!
+        
+        <p className="text-sm text-gray-500 text-center">
+          Sign up with your email or continue with Google
         </p>
       </div>
     </div>
