@@ -3,6 +3,7 @@ import { authRouter } from "@/server/api/routers/auth";
 import { macrosRouter } from "@/server/api/routers/macros";
 import { intestinalRouter } from "@/server/api/routers/intestinal";
 import { weightRouter } from "@/server/api/routers/weight";
+import { subscriptionRouter } from "@/server/api/routers/subscription";
 
 /**
  * This is the primary router for your server.
@@ -14,6 +15,7 @@ export const appRouter = createTRPCRouter({
   macros: macrosRouter,
   intestinal: intestinalRouter,
   weight: weightRouter,
+  subscription: subscriptionRouter,
 });
 
 // export type definition of API

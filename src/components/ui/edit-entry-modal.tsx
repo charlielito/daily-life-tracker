@@ -18,6 +18,7 @@ interface EditEntryModalProps {
   entry: any;
   type: "food" | "health";
   isLoading?: boolean;
+  error?: any; // Add error prop
 }
 
 interface FoodFormData {
@@ -57,6 +58,7 @@ export function EditEntryModal({
   entry,
   type,
   isLoading = false,
+  error = null, // Add error prop
 }: EditEntryModalProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -156,6 +158,15 @@ export function EditEntryModal({
         {/* Content */}
         <div className="p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded p-3">
+                <p className="text-red-600 text-sm">
+                  <strong>Error:</strong> {error.message}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input

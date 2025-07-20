@@ -1,6 +1,6 @@
 # Daily Life Tracker
 
-A modern web application for tracking daily health metrics including nutrition, intestinal health, physical activity, and sleep patterns.
+A modern web application for tracking daily health metrics including nutrition, intestinal health, physical activity, and sleep patterns. Now with **Premium Subscription** powered by Stripe!
 
 ## 🏗️ Architecture Overview
 
@@ -11,6 +11,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 - **Authentication**: NextAuth.js with credentials provider + Google OAuth
 - **File Storage**: Cloudinary for image uploads
 - **AI Integration**: Google Gemini 2.5-flash for macro calculation
+- **Payments**: Stripe for subscription management
 - **Deployment**: Vercel (free tier)
 - **Infrastructure**: Supabase for PostgreSQL hosting (free tier)
 
@@ -23,9 +24,9 @@ A modern web application for tracking daily health metrics including nutrition, 
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   File Storage  │    │   AI Service     │    │   Auth Service  │
-│   (Cloudinary)  │    │   (Gemini)       │    │   (NextAuth.js) │
-│   + OAuth       │    │                  │    │   + Google      │
+│   File Storage  │    │   AI Service     │    │   Payments      │
+│   (Cloudinary)  │    │   (Gemini)       │    │   (Stripe)      │
+│   + OAuth       │    │                  │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
@@ -33,6 +34,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 
 ### User
 - id, email, password_hash, name, created_at, updated_at
+- **New**: subscription_status, customer_id, subscription_id, trial_end_date, monthly_ai_usage, monthly_uploads, is_unlimited
 
 ### MacroEntry
 - id, user_id, description, image_url?, hour, date, calculated_macros (JSON), created_at, updated_at
@@ -44,8 +46,25 @@ A modern web application for tracking daily health metrics including nutrition, 
 - id, user_id, date, weight, created_at, updated_at
 - **Unique constraint**: One weight entry per user per day
 
-### Future Models
-- PhysicalActivity, SleepEntry, CorrelationAnalysis
+## 💳 Subscription System
+
+### Free Tier
+- ✅ 20 AI macro calculations per month
+- ✅ 5 image uploads per month
+- ✅ All basic tracking features
+- ✅ Daily summaries and trends
+
+### Premium Tier ($7.99/month)
+- ✅ **Unlimited** AI macro calculations
+- ✅ **Unlimited** image uploads
+- ✅ Priority support
+- ✅ Future premium features
+- ✅ Advanced analytics (coming soon)
+
+### Admin Features
+- 🔧 Grant unlimited access to specific users
+- 🔧 Admin panel at `/admin`
+- 🔧 Usage monitoring and management
 
 ## 🚀 Features
 
@@ -75,7 +94,15 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Enhanced AI macro calculation with image analysis**
 - [x] ✅ **Weight prompt system for daily tracking**
 
-### Phase 3 (Future)
+### Phase 3 (✅ COMPLETE!)
+- [x] ✅ **Stripe subscription system with usage-based limits**
+- [x] ✅ **Usage tracking and warnings**
+- [x] ✅ **Admin panel for granting unlimited access**
+- [x] ✅ **Subscription management page**
+- [x] ✅ **Automated billing with webhooks**
+- [x] ✅ **Smart usage limiting for AI and uploads**
+
+### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
 - [ ] 🚧 Weekly/monthly summaries and analytics
 - [ ] 🚧 Physical activity tracking
@@ -91,6 +118,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 - Google AI API key (for macro calculation)
 - Cloudinary account (for image uploads)
 - Google OAuth credentials (for Gmail login)
+- **Stripe account (for payments)**
 
 ### Quick Start
 ```bash
@@ -132,7 +160,37 @@ GOOGLE_AI_API_KEY="your-gemini-api-key"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
+
+# Required for payments (NEW!)
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 ```
+
+### Setting Up Stripe (New!)
+
+1. **Create Stripe Account**:
+   - Go to [Stripe Dashboard](https://dashboard.stripe.com/)
+   - Create a new account or sign in
+   - Switch to test mode for development
+
+2. **Create Premium Product**:
+   - Go to Products → Create Product
+   - Name: "Daily Life Tracker Premium"
+   - Create a recurring price: $7.99/month
+   - Copy the price ID to `STRIPE_PREMIUM_PRICE_ID`
+
+3. **Get API Keys**:
+   - Go to Developers → API keys
+   - Copy "Publishable key" to `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+   - Copy "Secret key" to `STRIPE_SECRET_KEY`
+
+4. **Set Up Webhooks**:
+   - Go to Developers → Webhooks
+   - Add endpoint: `https://your-domain.com/api/stripe/webhook`
+   - Select events: `customer.subscription.*`, `invoice.payment_succeeded`, `invoice.payment_failed`
+   - Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
 
 ### Setting Up Google OAuth
 
@@ -159,6 +217,7 @@ CLOUDINARY_API_SECRET="your-api-secret"
 - Switch to PostgreSQL in `prisma/schema.prisma`
 - Deploy to Vercel with Supabase database
 - Update Google OAuth redirect URLs for production domain
+- **Update Stripe webhook endpoint to production URL**
 
 ## 📱 User Experience
 
@@ -167,6 +226,13 @@ CLOUDINARY_API_SECRET="your-api-secret"
 - **Google OAuth**: One-click sign-in with Gmail account
 - **Unified Experience**: Same dashboard regardless of sign-in method
 - **Smart Redirects**: Automatic dashboard redirect for authenticated users
+
+### Subscription Flow (New!)
+1. **Free Trial**: Users start with free tier (20 AI calculations, 5 uploads/month)
+2. **Usage Warnings**: Smart notifications when approaching limits
+3. **Upgrade Prompts**: Contextual upgrade suggestions
+4. **Seamless Billing**: Stripe handles all payment processing
+5. **Admin Override**: Unlimited access can be granted manually
 
 ### Weight Tracking Flow
 1. **Daily Prompt**: New users prompted to enter weight on dashboard
@@ -177,22 +243,28 @@ CLOUDINARY_API_SECRET="your-api-secret"
 ### Macro Tracking Flow
 1. User logs in → redirected to dashboard
 2. Clicks "Add New Meal" on dashboard or navigates to `/food`
-3. Enters meal description and time, optionally adds photo
-4. AI calculates macros automatically using Google Gemini (enhanced with image analysis)
-5. User can edit/delete entries with full form modal
-6. User can view daily summary with macro totals
-7. Recent meals shown with calculated nutrition info and thumbnails
+3. **Usage Check**: System verifies AI calculation limit (new!)
+4. Enters meal description and time, optionally adds photo
+5. AI calculates macros automatically using Google Gemini (enhanced with image analysis)
+6. **Usage Increment**: System tracks AI usage for billing (new!)
+7. User can edit/delete entries with full form modal
+8. User can view daily summary with macro totals
+9. Recent meals shown with calculated nutrition info and thumbnails
 
 ### Intestinal Health Flow
 1. Navigate to "Health Monitoring" from dashboard or `/health`
 2. Log intestinal activity using Bristol Stool Scale
-3. Add color, pain level (0-10), optional notes, and photos
-4. User can edit/delete entries with full form modal
-5. View daily summary with average pain level
-6. Track patterns and individual entries with visual indicators
+3. **Upload Check**: System verifies image upload limit (new!)
+4. Add color, pain level (0-10), optional notes, and photos
+5. User can edit/delete entries with full form modal
+6. View daily summary with average pain level
+7. Track patterns and individual entries with visual indicators
 
 ### Dashboard Overview
 - **Daily stats**: calories consumed, meals logged, health entries, current weight
+- **Subscription Badge**: Shows current plan (Free/Premium) (new!)
+- **Usage Warnings**: Progress bars and warnings for limits (new!)
+- **Upgrade Prompts**: Smart contextual upgrade suggestions (new!)
 - **Weight management**: Smart weight display with prompts for missing data
 - **Quick action buttons** for adding new entries
 - **Recent activity** from both food and health tracking with image thumbnails
@@ -203,12 +275,21 @@ CLOUDINARY_API_SECRET="your-api-secret"
 - Password hashing with bcrypt
 - JWT token management via NextAuth.js
 - Google OAuth integration with secure token handling
+- **Stripe webhook signature verification** (new!)
 - Input validation with Zod
 - Protected routes requiring authentication
-- Rate limiting on API endpoints
+- **Usage-based rate limiting** (new!)
 - User data isolation (users can only access their own data)
+- **Admin role protection** (new!)
 
 ## 📈 Data Architecture
+
+### Subscription Management (New!)
+- **Usage Tracking**: Monthly AI and upload counters with automatic reset
+- **Flexible Limits**: Different limits for free vs premium users
+- **Admin Override**: `isUnlimited` flag for manual unlimited access
+- **Webhook Integration**: Real-time subscription status updates from Stripe
+- **Graceful Degradation**: Features remain accessible, just with limits
 
 ### Weight Tracking
 - **Decoupled Design**: Weight separate from meal entries
@@ -221,18 +302,23 @@ CLOUDINARY_API_SECRET="your-api-secret"
 - **Multiple Sources**: File upload or camera capture
 - **AI Enhancement**: Images used for better macro calculation accuracy
 - **Secure Storage**: Images linked to user entries with proper access control
+- **Usage Tracking**: Upload counts tracked for billing (new!)
 
 ### Data Editing
 - **Full CRUD Operations**: Create, read, update, delete for all entries
 - **Smart AI Recalculation**: Macros recalculated only when description/image changes
+- **Usage-Aware**: AI recalculation respects usage limits (new!)
 - **Optimistic Updates**: UI updates immediately for better UX
 - **Confirmation Dialogs**: Prevents accidental deletions
 
 ## 🧪 Current Status
-**🎉 PRODUCTION READY!**
+**🎉 PRODUCTION READY WITH MONETIZATION!**
 
 The app is fully functional with:
 - ✅ Complete authentication system (email + Google OAuth)
+- ✅ **Stripe subscription system with usage-based billing**
+- ✅ **Smart usage tracking and limiting**
+- ✅ **Admin panel for user management**
 - ✅ Working dashboard with daily overview and weight tracking
 - ✅ Food tracking with AI-powered macro calculation and image analysis
 - ✅ Health monitoring with Bristol Stool Scale and photo documentation
@@ -245,18 +331,43 @@ The app is fully functional with:
 - ✅ Type-safe end-to-end communication
 - ✅ Real-time data updates and comprehensive error handling
 
-**Ready for production use!** 🚀
+**Ready for monetization and production use!** 🚀💰
 
 ### What You Can Do Right Now:
 1. **Sign up** with email at `/auth/signup` OR **sign in with Google**
-2. **Sign in** at `/auth/signin` with multiple authentication options
+2. **Start with free tier** (20 AI calculations, 5 uploads/month)
 3. **Track daily weight** with automatic prompting and smart display
-4. **Track meals** with automatic macro calculation
+4. **Track meals** with AI-powered macro calculation
 5. **Upload food photos** from device or camera for better macro accuracy
-6. **Edit/delete any entry** with full-featured modal forms
-7. **Monitor health** using medical-grade Bristol Stool Scale
-8. **Add health photos** for comprehensive documentation
-9. **View daily summaries** on the dashboard with complete macro breakdowns
-10. **Experience seamless UX** with optimistic updates and error handling
+6. **Monitor usage** on the subscription page
+7. **Upgrade to premium** for unlimited access
+8. **Edit/delete any entry** with full-featured modal forms
+9. **Monitor health** using medical-grade Bristol Stool Scale
+10. **Add health photos** for comprehensive documentation
+11. **View daily summaries** on the dashboard with complete macro breakdowns
+12. **Experience seamless UX** with usage warnings and upgrade prompts
 
-**Next phase**: Add data visualization, weekly/monthly analytics, and correlation analysis! 🚀 
+### Admin Features:
+- **Grant unlimited access** to friends/team members at `/admin`
+- **Monitor user subscriptions** and usage patterns
+- **Override billing limits** for special users
+
+**Next phase**: Add data visualization, weekly/monthly analytics, and correlation analysis! 🚀
+
+## 💡 Business Model
+
+### Revenue Streams
+- **Premium Subscriptions**: $7.99/month for unlimited access
+- **Freemium Model**: Generous free tier to attract users
+- **Admin Overrides**: Free unlimited access for team/friends
+
+### Usage Limits (Designed for Conversion)
+- **Free Tier**: 20 AI calculations + 5 uploads/month
+- **Strategic Limiting**: Limits hit after ~1 week of active use
+- **Smart Notifications**: Progressive warnings at 80% and 100% usage
+- **Contextual Upgrades**: Upgrade prompts when limits are reached
+
+### Cost Management
+- **AI Costs**: Google Gemini API usage tracked and limited
+- **Storage Costs**: Cloudinary uploads tracked and limited
+- **Scalable Infrastructure**: Usage-based pricing aligns costs with revenue 

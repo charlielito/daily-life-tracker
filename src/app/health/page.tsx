@@ -500,6 +500,7 @@ export default function HealthPage() {
         entry={editingEntry}
         type="health"
         isLoading={updateHealthEntry.isLoading || deleteHealthEntry.isLoading}
+        error={updateHealthEntry.error || deleteHealthEntry.error}
       />
     </div>
   );

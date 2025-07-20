@@ -8,9 +8,12 @@ import { signOut } from "next-auth/react";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { format } from "date-fns";
 import Image from "next/image";
+import { AlertTriangle, Crown, Zap } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -26,6 +29,12 @@ export default function DashboardPage() {
       return;
     }
   }, [session, status, router]);
+
+  // Fetch subscription status
+  const { data: subscriptionStatus } = api.subscription.getStatus.useQuery(
+    undefined,
+    { enabled: !!session }
+  );
 
   // Fetch today's data
   const { data: todayMacros = [], isLoading: macrosLoading } = api.macros.getToday.useQuery(
@@ -96,7 +105,7 @@ export default function DashboardPage() {
 
   // Calculate total macros for today
   const totalMacros = todayMacros.reduce(
-    (acc, entry) => {
+    (acc: any, entry: any) => {
       if (entry.calculatedMacros) {
         acc.calories += entry.calculatedMacros.calories || 0;
         acc.protein += entry.calculatedMacros.protein || 0;
@@ -112,26 +121,109 @@ export default function DashboardPage() {
   const displayWeight = todayWeight?.weight || latestWeight?.weight;
   const isLatestWeight = !todayWeight && latestWeight;
 
+  // Usage warnings
+  const isUnlimited = subscriptionStatus?.hasUnlimitedAccess;
+  const aiUsagePercent = subscriptionStatus?.limits.aiCalculations 
+    ? (subscriptionStatus.monthlyAiUsage / subscriptionStatus.limits.aiCalculations) * 100 
+    : 0;
+  const uploadUsagePercent = subscriptionStatus?.limits.uploads
+    ? (subscriptionStatus.monthlyUploads / subscriptionStatus.limits.uploads) * 100
+    : 0;
+
+  const showUsageWarning = !isUnlimited && (aiUsagePercent > 80 || uploadUsagePercent > 80);
+  const limitReached = !isUnlimited && (aiUsagePercent >= 100 || uploadUsagePercent >= 100);
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header with Sign Out */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {session.user?.name || session.user?.email?.split('@')[0]}! 👋
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, {session.user?.name || session.user?.email?.split('@')[0]}! 👋
+              </h1>
+              {subscriptionStatus && (
+                <Badge variant={isUnlimited ? "default" : "secondary"} className="flex items-center gap-1">
+                  {isUnlimited ? (
+                    <>
+                      <Crown className="h-3 w-3" />
+                      Premium
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3 w-3" />
+                      Free
+                    </>
+                  )}
+                </Badge>
+              )}
+            </div>
             <p className="text-gray-600">
               {format(today, "EEEE, MMMM d, yyyy")} • Track your daily health
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => signOut({ callbackUrl: "/" })}
-          >
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/subscription">
+              <Button variant="outline" size="sm">
+                {isUnlimited ? "Manage Plan" : "Upgrade"}
+              </Button>
+            </Link>
+            <Button 
+              variant="outline" 
+              onClick={() => signOut({ callbackUrl: "/" })}
+            >
+              Sign Out
+            </Button>
+          </div>
         </div>
+
+        {/* Usage Warning Banner */}
+        {(showUsageWarning || limitReached) && (
+          <Card className={`mb-6 ${limitReached ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className={`h-5 w-5 mt-0.5 ${limitReached ? 'text-red-500' : 'text-amber-500'}`} />
+                <div className="flex-1">
+                  <h3 className={`font-semibold ${limitReached ? 'text-red-800' : 'text-amber-800'}`}>
+                    {limitReached ? 'Usage Limit Reached' : 'Usage Warning'}
+                  </h3>
+                  <p className={`text-sm mt-1 ${limitReached ? 'text-red-700' : 'text-amber-700'}`}>
+                    {limitReached 
+                      ? 'You\'ve reached your monthly limits. Upgrade to continue using AI features and image uploads.'
+                      : 'You\'re approaching your monthly usage limits. Consider upgrading for unlimited access.'
+                    }
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {!isUnlimited && subscriptionStatus && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium w-20">AI Usage:</span>
+                          <Progress value={aiUsagePercent} className="flex-1 h-2" />
+                          <span className="text-xs w-16 text-right">
+                            {subscriptionStatus.monthlyAiUsage}/{subscriptionStatus.limits.aiCalculations}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium w-20">Uploads:</span>
+                          <Progress value={uploadUsagePercent} className="flex-1 h-2" />
+                          <span className="text-xs w-16 text-right">
+                            {subscriptionStatus.monthlyUploads}/{subscriptionStatus.limits.uploads}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <Link href="/subscription">
+                  <Button size="sm">
+                    Upgrade Now
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Today's Stats - Big Cards */}
@@ -272,7 +364,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {todayMacros.slice(-3).reverse().map((entry) => (
+                {todayMacros.slice(-3).reverse().map((entry: any) => (
                   <div key={entry.id} className="border-b pb-3 last:border-b-0">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
@@ -360,7 +452,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {todayIntestinal.slice(-3).reverse().map((entry) => (
+                {todayIntestinal.slice(-3).reverse().map((entry: any) => (
                   <div key={entry.id} className="border-b pb-3 last:border-b-0">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">

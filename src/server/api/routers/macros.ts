@@ -2,10 +2,69 @@ import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TRPCError } from "@trpc/server";
 import { env } from "@/env.js";
+import { STRIPE_CONFIG } from "@/lib/stripe";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 const genAI = new GoogleGenerativeAI(env.GOOGLE_AI_API_KEY);
+
+// Helper function to check if user can perform AI calculation
+async function checkAiUsageLimit(userId: string, db: any) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      subscriptionStatus: true,
+      monthlyAiUsage: true,
+      isUnlimited: true,
+    },
+  });
+
+  if (!user) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "User not found",
+    });
+  }
+
+  // Check if user has unlimited access
+  if (user.isUnlimited || user.subscriptionStatus === "active") {
+    return { canPerform: true, user };
+  }
+
+  // Check usage limits for free users
+  const canPerform = user.monthlyAiUsage < STRIPE_CONFIG.FREE_LIMITS.AI_CALCULATIONS;
+  if (!canPerform) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Monthly AI calculation limit reached (${STRIPE_CONFIG.FREE_LIMITS.AI_CALCULATIONS}). Please upgrade to continue.`,
+    });
+  }
+
+  return { canPerform, user };
+}
+
+// Helper function to increment AI usage
+async function incrementAiUsage(userId: string, db: any) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      isUnlimited: true,
+      subscriptionStatus: true,
+    },
+  });
+
+  // Don't increment for unlimited users
+  if (user?.isUnlimited || user?.subscriptionStatus === "active") {
+    return;
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      monthlyAiUsage: { increment: 1 },
+    },
+  });
+}
 
 // Reusable function for AI macro calculation
 async function calculateMacros(description: string, imageUrl?: string): Promise<string | undefined> {
@@ -69,8 +128,16 @@ export const macrosRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
 
+      // Check AI usage limits
+      await checkAiUsageLimit(userId, ctx.db);
+
       // Calculate macros using AI
       const calculatedMacros = await calculateMacros(input.description, input.imageUrl);
+
+      // Increment usage counter after successful AI calculation
+      if (calculatedMacros) {
+        await incrementAiUsage(userId, ctx.db);
+      }
 
       const entry = await ctx.db.macroEntry.create({
         data: {
@@ -125,9 +192,14 @@ export const macrosRouter = createTRPCRouter({
       // Calculate macros using AI if description or image changed
       let calculatedMacros: string | undefined = (existingEntry.calculatedMacros as string) || undefined;
       if (input.description !== existingEntry.description || input.imageUrl !== existingEntry.imageUrl) {
+        // Check AI usage limits before recalculation
+        await checkAiUsageLimit(userId, ctx.db);
+        
         const newMacros = await calculateMacros(input.description, input.imageUrl);
         if (newMacros) {
           calculatedMacros = newMacros;
+          // Increment usage counter after successful AI calculation
+          await incrementAiUsage(userId, ctx.db);
         }
         // Keep existing macros if AI calculation fails
       }
@@ -208,7 +280,7 @@ export const macrosRouter = createTRPCRouter({
       });
 
       // Parse JSON strings back to objects
-      return entries.map(entry => ({
+      return entries.map((entry: any) => ({
         ...entry,
         calculatedMacros: entry.calculatedMacros ? JSON.parse(entry.calculatedMacros as string) : null,
       }));

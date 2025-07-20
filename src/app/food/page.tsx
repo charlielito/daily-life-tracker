@@ -204,7 +204,7 @@ export default function FoodPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">
                   <p className="text-green-600 text-sm">
-                    <strong>Success!</strong> Your meal has been added and macros calculated.
+                    <strong>Success!</strong> Your meal has been logged and macros calculated.
                   </p>
                 </div>
               )}
@@ -412,6 +412,7 @@ export default function FoodPage() {
         entry={editingEntry}
         type="food"
         isLoading={updateMacroEntry.isLoading || deleteMacroEntry.isLoading}
+        error={updateMacroEntry.error || deleteMacroEntry.error}
       />
     </div>
   );

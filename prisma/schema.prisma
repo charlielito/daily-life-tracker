@@ -18,6 +18,21 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Subscription fields
+  subscriptionStatus String   @default("free") // "free", "trial", "active", "cancelled", "unlimited"
+  subscriptionId     String? // Stripe subscription ID
+  customerId         String? // Stripe customer ID
+  trialEndDate       DateTime?
+  subscriptionEndDate DateTime?
+  
+  // Usage tracking (monthly limits)
+  monthlyAiUsage      Int      @default(0)
+  monthlyUploads      Int      @default(0)
+  lastUsageReset      DateTime @default(now()) // Track when usage was last reset
+  
+  // Admin override for unlimited access
+  isUnlimited        Boolean  @default(false) // Admin can set this to true for free unlimited access
+
   // Relations
   macroEntries      MacroEntry[]
   intestinalEntries IntestinalEntry[]
