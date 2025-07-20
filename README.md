@@ -7,19 +7,18 @@ A modern web application for tracking daily health metrics including nutrition, 
 ### Tech Stack
 - **Frontend**: Next.js 14 with TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API routes with tRPC for type-safe APIs
-- **Database**: SQLite (local development) / PostgreSQL (production)
+- **Database**: Supabase PostgreSQL (cloud-hosted for both development and production)
 - **Authentication**: NextAuth.js with credentials provider + Google OAuth
 - **File Storage**: Cloudinary for image uploads
 - **AI Integration**: Google Gemini 2.5-flash for macro calculation
 - **Payments**: Stripe for subscription management
 - **Deployment**: Vercel (free tier)
-- **Infrastructure**: Supabase for PostgreSQL hosting (free tier)
 
 ### Architecture Diagram
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend API    │    │   Database      │
-│   (Next.js)     │◄──►│   (tRPC/Next.js) │◄──►│ (SQLite/PgSQL)  │
+│   (Next.js)     │◄──►│   (tRPC/Next.js) │◄──►│ (Supabase PgSQL)│
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
@@ -210,12 +209,18 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 ## 🌐 Deployment
 
 ### Local Development
-- Uses SQLite database (no external database required)
-- All data stored in `prisma/dev.db`
+
+**Current Status**: The app runs entirely on **Supabase PostgreSQL** for all environments (development, staging, production). This ensures consistency across all deployment stages.
+
+#### Database
+- **All data stored in Supabase PostgreSQL** (cloud-hosted)
+- **Connection pooling** for optimal performance
+- **Automatic backups** and scaling handled by Supabase
+- **Real-time capabilities** available for future features
 
 ### Production Deployment
-- Switch to PostgreSQL in `prisma/schema.prisma`
-- Deploy to Vercel with Supabase database
+- **Database**: Already on Supabase PostgreSQL (no migration needed)
+- Deploy to Vercel with existing Supabase database
 - Update Google OAuth redirect URLs for production domain
 - **Update Stripe webhook endpoint to production URL**
 
@@ -326,7 +331,7 @@ The app is fully functional with:
 - ✅ Enhanced AI macro calculation using food images
 - ✅ Separate daily weight tracking system with smart prompts
 - ✅ Full data editing capabilities (edit/delete all entries)
-- ✅ SQLite database storing all data locally
+- ✅ Supabase database storing all data locally
 - ✅ Modern, responsive UI with consistent design
 - ✅ Type-safe end-to-end communication
 - ✅ Real-time data updates and comprehensive error handling

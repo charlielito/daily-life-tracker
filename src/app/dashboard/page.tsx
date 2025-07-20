@@ -30,8 +30,8 @@ export default function DashboardPage() {
     }
   }, [session, status, router]);
 
-  // Fetch subscription status
-  const { data: subscriptionStatus } = api.subscription.getStatus.useQuery(
+  // Fetch subscription status - this is critical for the dashboard
+  const { data: subscriptionStatus, isLoading: subscriptionLoading } = api.subscription.getStatus.useQuery(
     undefined,
     { enabled: !!session }
   );
@@ -89,7 +89,12 @@ export default function DashboardPage() {
     });
   };
 
-  if (status === "loading") {
+  // Check if any critical data is still loading
+  // Prioritize subscription status as it affects the entire UI layout
+  const isCriticalDataLoading = subscriptionLoading;
+  const isOtherDataLoading = macrosLoading || intestinalLoading || weightLoading;
+
+  if (status === "loading" || isCriticalDataLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-screen">
@@ -101,6 +106,56 @@ export default function DashboardPage() {
 
   if (!session) {
     return null; // Will redirect to sign-in
+  }
+
+  // If subscription is loaded but other data is still loading, show partial content
+  if (isOtherDataLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        {/* Header with subscription info */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Welcome back, {session.user?.name || session.user?.email}!
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {format(today, "EEEE, MMMM do, yyyy")}
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Subscription Badge */}
+            {subscriptionStatus && (
+              <div className="flex items-center gap-2">
+                {subscriptionStatus.subscriptionStatus === 'free' ? (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    Free Plan
+                  </Badge>
+                ) : subscriptionStatus.isUnlimited ? (
+                  <Badge variant="default" className="flex items-center gap-1 bg-purple-600">
+                    <Crown className="h-3 w-3" />
+                    Unlimited
+                  </Badge>
+                ) : (
+                  <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500">
+                    <Crown className="h-3 w-3" />
+                    Premium
+                  </Badge>
+                )}
+              </div>
+            )}
+            <Button variant="outline" onClick={() => signOut()}>
+              Sign Out
+            </Button>
+          </div>
+        </div>
+
+        {/* Loading content */}
+        <div className="flex items-center justify-center py-16">
+          <div className="text-lg text-gray-600">Loading your health data...</div>
+        </div>
+      </div>
+    );
   }
 
   // Calculate total macros for today

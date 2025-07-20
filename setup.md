@@ -1,6 +1,6 @@
 # Setup Guide for Daily Life Tracker
 
-## 🚀 Quick Start (Local Development)
+## 🚀 Quick Start (Supabase Development)
 
 ### 1. Clone and Install Dependencies
 ```bash
@@ -18,10 +18,24 @@ cp .env.example .env
 
 **Required Environment Variables:**
 
-#### Database (Required)
+#### Database (Required - Supabase)
 ```env
-DATABASE_URL="file:./dev.db"  # SQLite for local development
+# Connect to Supabase via connection pooling
+DATABASE_URL="postgresql://postgres.project_ref:password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Direct connection to the database. Used for migrations
+DIRECT_URL="postgresql://postgres.project_ref:password@aws-0-region.pooler.supabase.com:5432/postgres"
+
+# Supabase client configuration
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 ```
+
+**To get your Supabase credentials:**
+1. Go to [Supabase](https://supabase.com) and create a new project
+2. Go to **Settings** → **Database** to get your connection strings
+3. Go to **Settings** → **API** to get your URL and anon key
+4. Replace the values above with your actual credentials
 
 #### Authentication (Required)
 ```env
@@ -104,13 +118,20 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_your_publishable_key_here"
 STRIPE_PREMIUM_PRICE_ID="price_your_price_id_here"
 ```
 
-### 3. Set Up Database (Automatic - SQLite)
+### 3. Set Up Database (Supabase)
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-The app uses SQLite for local development - no external database setup required!
+The app uses **Supabase PostgreSQL** for all environments - no local database setup required! Your data is automatically backed up and scalable.
+
+**Benefits of Supabase:**
+- ✅ **Zero setup**: No local database installation needed
+- ✅ **Production-ready**: Same database for development and production
+- ✅ **Auto-scaling**: Handles traffic spikes automatically
+- ✅ **Backups**: Automatic daily backups included
+- ✅ **Real-time**: Built-in real-time capabilities for future features
 
 ### 4. Start Development Server
 ```bash
@@ -122,7 +143,7 @@ Visit `http://localhost:3000` to see your app!
 ## 🎯 **You're Ready!**
 
 The app is now running with:
-- ✅ SQLite database (stored in `prisma/dev.db`)
+- ✅ Supabase PostgreSQL database (cloud-hosted)
 - ✅ Authentication system (email/password + Google OAuth)
 - ✅ AI-powered macro calculation with image analysis
 - ✅ Separate daily weight tracking system
@@ -202,7 +223,11 @@ npm start
 
 ## 🗄️ Database Management
 
-### View Data (SQLite Browser)
+### View Data (Supabase Dashboard)
+1. Go to your [Supabase Dashboard](https://app.supabase.com)
+2. Navigate to **Table Editor** to view and edit data
+3. Use **SQL Editor** for custom queries
+4. **Alternative**: Use Prisma Studio locally:
 ```bash
 npx prisma studio
 ```
@@ -211,20 +236,25 @@ npx prisma studio
 ```bash
 npx prisma db push --force-reset
 ```
+⚠️ **Warning**: This will delete all data in your Supabase database!
 
-### Switch to PostgreSQL (Production)
-1. Update `prisma/schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-2. Add PostgreSQL connection string to `.env`:
+### Database Configuration
+The app is configured to use **Supabase PostgreSQL** with:
+- **Connection pooling** for optimal performance (port 6543)
+- **Direct connection** for migrations (port 5432)
+- **SSL encryption** for secure connections
+- **Automatic backups** handled by Supabase
+
+### Switch Databases (if needed)
+To use a different Supabase project:
+1. Update connection strings in `.env` and `.env.local`:
    ```env
-   DATABASE_URL="postgresql://username:password@host:port/database"
+   DATABASE_URL="postgresql://postgres.new_project_ref:password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
+   DIRECT_URL="postgresql://postgres.new_project_ref:password@aws-0-region.pooler.supabase.com:5432/postgres"
+   NEXT_PUBLIC_SUPABASE_URL="https://new-project-ref.supabase.co"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="new-anon-key"
    ```
-3. Run migrations:
+2. Run migrations:
    ```bash
    npx prisma generate
    npx prisma db push
@@ -241,170 +271,5 @@ npm install
 ```
 
 **Build errors:**
-```bash
-npx prisma generate
-npm run build
 ```
-
-**Authentication not working:**
-- Check NEXTAUTH_SECRET is set
-- Verify NEXTAUTH_URL matches your domain
-
-**Google OAuth not working:**
-- Verify GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set correctly
-- Check redirect URIs in Google Cloud Console match your domain
-- Ensure Google+ API is enabled
-
-**AI features not working:**
-- Verify GOOGLE_AI_API_KEY is set correctly
-- Check your Google AI Studio quota
-
-**Image uploads failing:**
-- Verify all Cloudinary environment variables are set
-- Check your Cloudinary account limits
-
-**Stripe payments not working:**
-- Verify all Stripe environment variables are set
-- Check Stripe is in correct mode (Test for development, Live for production)
-- Verify webhook endpoint is accessible
-- Check webhook secret matches
-
-**Usage limits not working:**
-- Check database has been updated with new subscription fields
-- Verify user subscription status in database
-- Check browser console for API errors
-
-### Subscription Testing
-
-**Test Stripe Integration:**
-1. Use test card: `4242 4242 4242 4242`
-2. Any future expiry date (e.g., 12/34)
-3. Any 3-digit CVC (e.g., 123)
-4. Any billing address
-
-**Test Webhooks Locally:**
-1. Install Stripe CLI: https://stripe.com/docs/stripe-cli
-2. Login: `stripe login`
-3. Forward events: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
-4. Use the webhook signing secret from CLI output
-
-## 📊 Development Workflow
-
-### Adding New Features
-1. Update database schema in `prisma/schema.prisma`
-2. Run `npx prisma db push`
-3. Add tRPC routes in `src/server/api/routers/`
-4. Create React components in `src/components/`
-5. Add pages in `src/app/`
-
-### Testing Subscription Features
-1. Create test accounts with different subscription statuses
-2. Test usage limits by making multiple AI calls
-3. Test upgrade flow with Stripe test cards
-4. Test admin unlimited access grants
-5. Test webhook handling with Stripe CLI
-
-### Code Quality
-```bash
-npm run lint      # Check for linting errors
-npm run build     # Check for build errors
 ```
-
-## 🎯 Feature Overview
-
-The application now includes:
-
-### 🔐 **Authentication System**
-- **Email/Password**: Traditional sign-up and login
-- **Google OAuth**: One-click Gmail sign-in
-- **Unified Experience**: Same features regardless of auth method
-
-### 💳 **Subscription System**
-- **Free Tier**: 20 AI calculations, 5 uploads/month
-- **Premium Tier**: Unlimited access for $7.99/month
-- **Usage Tracking**: Real-time monitoring with progressive warnings
-- **Admin Override**: Grant unlimited access to specific users
-- **Stripe Integration**: Secure payment processing and webhook handling
-
-### 📊 **Weight Tracking**
-- **Daily Prompts**: Automatic prompting for missing weight
-- **Smart Display**: Today's weight or latest with date fallback
-- **One Per Day**: Database constraint ensures single entry per date
-- **Easy Access**: Always-available "Add weight" button
-
-### 🍽️ **Food Tracking**
-- **AI-Powered**: Automatic macro calculation using Google Gemini
-- **Usage-Aware**: Respects subscription limits with smart warnings
-- **Image Enhancement**: Upload food photos for better accuracy
-- **Full CRUD**: Create, edit, delete meal entries
-- **Visual History**: Thumbnails and complete macro breakdowns
-
-### 🏥 **Health Monitoring**
-- **Bristol Stool Scale**: Medical-grade intestinal health tracking
-- **Photo Documentation**: Visual health records with upload limits
-- **Pain Assessment**: 0-10 scale with visual indicators
-- **Full CRUD**: Create, edit, delete health entries
-
-### 🖼️ **Image Management**
-- **Multiple Sources**: File upload or camera capture
-- **Usage Tracking**: Upload counts tracked for billing
-- **Auto-Optimization**: Cloudinary handles resizing and delivery
-- **AI Integration**: Images improve macro calculation accuracy
-
-### 🎨 **User Experience**
-- **Subscription Awareness**: Clear usage indicators and upgrade prompts
-- **Progressive Warnings**: Smart notifications at 80% and 100% usage
-- **Responsive Design**: Works on all devices
-- **Real-time Updates**: Optimistic UI updates
-- **Error Handling**: Comprehensive error feedback
-- **Loading States**: Clear visual feedback during operations
-
-### 📱 **Dashboard**
-- **Subscription Badge**: Shows current plan (Free/Premium)
-- **Usage Warnings**: Progress bars and contextual upgrade prompts
-- **Daily Overview**: Calories, meals, health entries, weight
-- **Quick Actions**: Easy access to add new entries
-- **Recent Activity**: Latest meals and health entries with thumbnails
-- **Smart Weight Management**: Prompts and fallbacks for weight tracking
-
-### 👑 **Admin Features**
-- **Admin Panel**: Grant unlimited access at `/admin`
-- **User Management**: Override subscription limits for team/friends
-- **Usage Monitoring**: Track user subscription patterns
-- **Role Protection**: Admin-only access with email validation
-
-### 🔧 **Technical Features**
-- **Usage Limits**: Smart rate limiting based on subscription tier
-- **Webhook Integration**: Real-time subscription updates from Stripe
-- **Monthly Reset**: Automatic usage counter reset
-- **Graceful Degradation**: Features remain accessible with limits
-- **Type Safety**: End-to-end TypeScript with tRPC
-
-## 📈 Next Implementation Steps
-
-The foundation is complete! Future enhancements could include:
-
-1. **Data Visualization**
-   - Charts and graphs for trends
-   - Weekly/monthly summaries
-   - Correlation analysis between metrics
-
-2. **Advanced Premium Features**
-   - Export capabilities (CSV, PDF)
-   - Advanced search and filtering
-   - Custom nutrition goals
-   - Meal planning and recipes
-
-3. **Analytics & Insights**
-   - Health pattern recognition
-   - Dietary correlation analysis
-   - Personalized insights and recommendations
-   - Progress tracking and goal setting
-
-4. **Business Intelligence**
-   - User retention analytics
-   - Subscription conversion metrics
-   - Usage pattern analysis
-   - Revenue optimization
-
-**The app is now production-ready with a complete monetization strategy!** 🚀💰 
