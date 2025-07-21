@@ -1,23 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Check, Zap, Crown, ArrowLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, Zap, Crown, ArrowLeft, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { env } from "@/env.js";
 
 export default function SubscriptionPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showCancelMessage, setShowCancelMessage] = useState(false);
 
-  const { data: subscriptionStatus, isLoading } = api.subscription.getStatus.useQuery();
+  const { data: subscriptionStatus, isLoading, refetch } = api.subscription.getStatus.useQuery();
   const { data: stripeConfig } = api.subscription.getConfig.useQuery();
+
+  // Handle URL parameters when returning from Stripe
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    
+    if (success === 'true') {
+      setShowSuccessMessage(true);
+      // Refresh subscription status to get latest data
+      refetch();
+      // Clean up URL after a delay
+      setTimeout(() => {
+        router.replace('/subscription', { scroll: false });
+      }, 100);
+    }
+    
+    if (canceled === 'true') {
+      setShowCancelMessage(true);
+      // Clean up URL after a delay
+      setTimeout(() => {
+        router.replace('/subscription', { scroll: false });
+      }, 100);
+    }
+  }, [searchParams, refetch, router]);
+
+  // Auto-hide success message after 15 seconds
+  useEffect(() => {
+    if (showSuccessMessage) {
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessMessage]);
+
+  // Auto-hide cancel message after 10 seconds
+  useEffect(() => {
+    if (showCancelMessage) {
+      const timer = setTimeout(() => {
+        setShowCancelMessage(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCancelMessage]);
 
   const createCheckoutSession = api.subscription.createCheckoutSession.useMutation({
     onSuccess: (data) => {
@@ -107,6 +155,28 @@ export default function SubscriptionPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Subscription & Usage</h1>
         <p className="text-gray-600">Manage your subscription and monitor usage limits</p>
+      </div>
+
+      {/* Success/Cancel Messages */}
+      <div className="mb-6 space-y-4">
+        {showSuccessMessage && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              🎉 <strong>Welcome to Premium!</strong> Your subscription has been activated successfully. 
+              You now have unlimited access to all features. It may take a few moments for your premium status to update.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {showCancelMessage && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <strong>Subscription canceled.</strong> You can upgrade to premium anytime by clicking the "Upgrade Now" button below.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       <div className="grid gap-6">
