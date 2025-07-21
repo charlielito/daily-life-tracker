@@ -191,6 +191,36 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
    - Select events: `customer.subscription.*`, `invoice.payment_succeeded`, `invoice.payment_failed`
    - Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
 
+5. **Local Development with Stripe CLI**:
+   ```bash
+   # Install Stripe CLI (Linux/Ubuntu)
+   curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg
+   echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee -a /etc/apt/sources.list.d/stripe.list
+   sudo apt update && sudo apt install stripe
+   
+   # Login to Stripe CLI
+   stripe login
+   
+   # Get local webhook secret for development
+   stripe listen --print-secret
+   # Copy the output (whsec_...) to STRIPE_WEBHOOK_SECRET in your .env
+   
+   # Start webhook forwarding (run in separate terminal)
+   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   
+   # Start your development server (run in another terminal)
+   npm run dev
+   
+   # Test webhook events
+   stripe trigger invoice.payment_succeeded
+   stripe trigger customer.subscription.created
+   ```
+
+6. **Configure Customer Portal**:
+   - Go to Settings → Billing → Customer Portal
+   - Configure what customers can do (cancel, update payment, etc.)
+   - Save configuration to enable "Manage Subscription" button
+
 ### Setting Up Google OAuth
 
 1. **Create Google OAuth App**:
