@@ -34,11 +34,16 @@ model User {
   // Admin override for unlimited access
   isUnlimited        Boolean  @default(false) // Admin can set this to true for free unlimited access
 
+  activityLevel       String?           @default("sedentary")
+  age                 Int?
+  gender              String?
+  heightCm            Float?
+  
   // Relations
   macroEntries      MacroEntry[]
   intestinalEntries IntestinalEntry[]
   weightEntries     WeightEntry[]
-
+  activityEntries     ActivityEntry[]
   @@map("users")
 }
 
@@ -49,7 +54,7 @@ model MacroEntry {
   imageUrl         String?
   hour             DateTime
   date             DateTime
-  calculatedMacros String? // JSON stored as string in SQLite
+  calculatedMacros String? // JSON stored as string 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -87,9 +92,28 @@ model IntestinalEntry {
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("intestinal_entries")
+}
+
+model ActivityEntry {
+  id               String   @id @default(cuid())
+  userId           String
+  activityType     String   // Type of activity (e.g., "Running", "Cycling", "Weight Training")
+  description      String   // User description of the activity
+  duration         Int      // Duration in minutes
+  intensity        String   // "low", "moderate", "high"
+  caloriesBurned   Int      // Calories burned (either calculated or user-provided)
+  caloriesManuallyEntered  Boolean  @default(false) // True if calories were provided by the user
+  date             DateTime // Date of the activity
+  hour             DateTime // Time of the activity
+  notes            String?  // Optional notes
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("intestinal_entries")
-} 
+  @@map("activity_entries")
+}

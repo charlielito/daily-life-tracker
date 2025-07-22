@@ -19,6 +19,7 @@ export default function SubscriptionPage() {
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showCancelMessage, setShowCancelMessage] = useState(false);
+  const [isCreatingPortal, setIsCreatingPortal] = useState(false);
 
   const { data: subscriptionStatus, isLoading, refetch } = api.subscription.getStatus.useQuery();
   const { data: stripeConfig } = api.subscription.getConfig.useQuery();
@@ -47,22 +48,22 @@ export default function SubscriptionPage() {
     }
   }, [searchParams, refetch, router]);
 
-  // Auto-hide success message after 15 seconds
+  // Auto-hide success message after 10 seconds
   useEffect(() => {
     if (showSuccessMessage) {
       const timer = setTimeout(() => {
         setShowSuccessMessage(false);
-      }, 15000);
+      }, 10000);
       return () => clearTimeout(timer);
     }
   }, [showSuccessMessage]);
 
-  // Auto-hide cancel message after 10 seconds
+  // Auto-hide cancel message after 5 seconds
   useEffect(() => {
     if (showCancelMessage) {
       const timer = setTimeout(() => {
         setShowCancelMessage(false);
-      }, 10000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [showCancelMessage]);
@@ -87,6 +88,7 @@ export default function SubscriptionPage() {
     },
     onError: (error) => {
       console.error("Portal error:", error);
+      setIsCreatingPortal(false);
     },
   });
 
@@ -121,6 +123,7 @@ export default function SubscriptionPage() {
   };
 
   const handleManageSubscription = () => {
+    setIsCreatingPortal(true);
     const currentUrl = typeof window !== "undefined" ? window.location.origin : "";
     createPortalSession.mutate({
       returnUrl: `${currentUrl}/subscription`,
@@ -227,8 +230,12 @@ export default function SubscriptionPage() {
                 </div>
                 
                 {subscriptionStatus?.subscriptionStatus === "active" && (
-                  <Button variant="outline" onClick={handleManageSubscription}>
-                    Manage Subscription
+                  <Button 
+                    variant="outline" 
+                    onClick={handleManageSubscription}
+                    disabled={isCreatingPortal}
+                  >
+                    {isCreatingPortal ? "Opening Portal..." : "Manage Subscription"}
                   </Button>
                 )}
               </div>
