@@ -100,11 +100,12 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Subscription management page**
 - [x] ✅ **Automated billing with webhooks**
 - [x] ✅ **Smart usage limiting for AI and uploads**
+- [x] ✅ **Smart calorie balance tracking**
+- [x] ✅ **Physical activity tracking**
 
 ### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
 - [ ] 🚧 Weekly/monthly summaries and analytics
-- [ ] 🚧 Physical activity tracking
 - [ ] 🚧 Sleep pattern monitoring
 - [ ] 🚧 Data correlation analysis
 - [ ] 🚧 Advanced visualizations
@@ -406,3 +407,51 @@ The app is fully functional with:
 - **AI Costs**: Google Gemini API usage tracked and limited
 - **Storage Costs**: Cloudinary uploads tracked and limited
 - **Scalable Infrastructure**: Usage-based pricing aligns costs with revenue 
+
+## 🏃‍♂️ Activity Tracking & Calorie Balance
+
+Track your physical activities and monitor your daily calorie balance with these new features:
+
+### Activity Logging
+- Log various types of physical activities (running, cycling, weight training, etc.)
+- Record duration, intensity, and description for each activity
+- Add optional notes for more context
+- Automatic calorie burn calculation based on:
+  - Activity type
+  - Duration
+  - Intensity
+  - Your current weight
+- Manual calorie input support from fitness trackers/watches
+- Edit or delete logged activities
+
+### Smart Calorie Balance
+- Real-time daily calorie balance tracking
+- Combines food intake with:
+  - BMR (Basal Metabolic Rate)
+  - TDEE (Total Daily Energy Expenditure)
+  - Activity calories burned
+- Clear deficit/surplus indicators
+- Automatic BMR calculation using:
+  - Weight
+  - Height
+  - Age
+  - Gender
+  - Activity level
+
+### Activity Types Supported
+- Weight Training
+- Running
+- Cycling
+- Swimming
+- Walking
+- Yoga
+- Tennis
+- Basketball
+- Soccer
+- Dancing
+- Hiking
+- Boxing
+- Climbing
+- Other (custom activities)
+
+Each activity type has specific calorie burn rates calibrated for different intensity levels (low, moderate, high) and adjusted for your body weight. 
