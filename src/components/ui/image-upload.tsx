@@ -41,7 +41,7 @@ export function ImageUpload({
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        throw new Error("Upload failed: " + response.statusText);
       }
 
       const data = await response.json();

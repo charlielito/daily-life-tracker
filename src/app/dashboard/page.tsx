@@ -334,41 +334,91 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
-                  <div className="text-sm text-gray-600">Consumed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
-                  <div className="text-sm text-gray-600">Burned Total</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{calorieBalance.caloriesBurnedFromActivity}</div>
-                  <div className="text-sm text-gray-600">From Exercise</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
-                    {calorieBalance.isDeficit ? '-' : '+'}{Math.abs(calorieBalance.calorieBalance)}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left side: Calorie Balance */}
+                <div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
+                      <div className="text-sm text-gray-600">Consumed</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
+                      <div className="text-sm text-gray-600">Burned Total</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{calorieBalance.caloriesBurnedFromActivity}</div>
+                      <div className="text-sm text-gray-600">From Exercise</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
+                        {calorieBalance.isDeficit ? '-' : '+'}{Math.abs(calorieBalance.calorieBalance)}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {calorieBalance.isDeficit ? 'Deficit' : 'Surplus'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {calorieBalance.isDeficit ? 'Deficit' : 'Surplus'}
+                  <div className="text-center">
+                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      calorieBalance.isDeficit 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {calorieBalance.isDeficit 
+                        ? "🎯 Calorie Deficit - Great for weight loss!" 
+                        : "⚠️ Calorie Surplus - Consider more activity!"}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  calorieBalance.isDeficit 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {calorieBalance.isDeficit 
-                    ? "🎯 Calorie Deficit - Great for weight loss!" 
-                    : "⚠️ Calorie Surplus - Consider more activity!"}
+
+                {/* Right side: User Profile Info */}
+                <div className="border-t md:border-t-0 md:border-l border-orange-200 pl-0 md:pl-6 pt-4 md:pt-0">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-orange-800">Your Profile</h3>
+                    <Link href="/profile">
+                      <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700">
+                        Edit Profile
+                      </Button>
+                    </Link>
+                  </div>
+                  {userProfile && (
+                    <div className="space-y-2">
+                      {userProfile.age && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Age:</span>
+                          <span className="font-medium">{userProfile.age} years</span>
+                        </div>
+                      )}
+                      {userProfile.gender && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Gender:</span>
+                          <span className="font-medium capitalize">{userProfile.gender}</span>
+                        </div>
+                      )}
+                      {userProfile.heightCm && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Height:</span>
+                          <span className="font-medium">{userProfile.heightCm} cm</span>
+                        </div>
+                      )}
+                      {userProfile.activityLevel && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Activity Level:</span>
+                          <span className="font-medium capitalize">{userProfile.activityLevel.replace(/_/g, ' ')}</span>
+                        </div>
+                      )}
+                      {(!userProfile.age || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
+                        <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded mt-2">
+                          ⚠️ Complete your profile for more accurate calculations
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-4">
+                    BMR: {calorieBalance.bmr} cal/day • TDEE: {calorieBalance.tdee} cal/day
+                  </div>
                 </div>
-              </div>
-              <div className="text-xs text-gray-500 text-center mt-2">
-                BMR: {calorieBalance.bmr} cal/day • TDEE: {calorieBalance.tdee} cal/day
               </div>
             </CardContent>
           </Card>
