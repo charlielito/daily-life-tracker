@@ -40,12 +40,12 @@ export default function HomePage() {
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Daily Life Tracker</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Track your daily health metrics including nutrition, intestinal health, 
-          physical activity, and sleep patterns for better insights into your wellbeing.
+          Track your daily health metrics including nutrition, physical activity, 
+          intestinal health, and calorie balance for better insights into your wellbeing and fitness goals.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -68,6 +68,44 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              🏃‍♂️ Activity Tracking
+            </CardTitle>
+            <CardDescription>
+              Track physical activities and monitor calories burned
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              • Log sports and exercise
+              • Automatic calorie burn calculation
+              • Activity intensity levels
+              • Exercise history and patterns
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🔥 Calorie Balance
+            </CardTitle>
+            <CardDescription>
+              Monitor daily calorie deficit or surplus for your goals
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              • BMR calculation (calories at rest)
+              • TDEE with activity level
+              • Daily deficit/surplus tracking
+              • Weight loss/gain insights
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               🏥 Health Monitoring
             </CardTitle>
             <CardDescription>
@@ -83,23 +121,40 @@ export default function HomePage() {
             </p>
           </CardContent>
         </Card>
+      </div>
 
-        <Card>
+      {/* New Calorie Balance Feature Highlight */}
+      <div className="mb-8">
+        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📊 Analytics
+            <CardTitle className="flex items-center gap-2 text-orange-800 text-xl">
+              🎯 Smart Calorie Balance Tracking
             </CardTitle>
-            <CardDescription>
-              View trends and correlations in your health data
+            <CardDescription className="text-orange-700">
+              Achieve your weight goals with intelligent calorie monitoring
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              • Data correlation analysis
-              • Historical trends
-              • Health insights
-              • Export capabilities
-            </p>
+          <CardContent className="text-orange-700">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">How it works:</h4>
+                <ul className="text-sm space-y-1">
+                  <li>• Set up your profile (age, gender, height, activity level)</li>
+                  <li>• Log your meals for calories consumed</li>
+                  <li>• Track your workouts for calories burned</li>
+                  <li>• Get daily deficit/surplus analysis</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">What you get:</h4>
+                <ul className="text-sm space-y-1">
+                  <li>• BMR: Calories your body burns at rest</li>
+                  <li>• TDEE: Total daily energy expenditure</li>
+                  <li>• Activity calories: From your logged exercises</li>
+                  <li>• Balance: Know if you're meeting your goals</li>
+                </ul>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
