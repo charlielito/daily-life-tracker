@@ -74,6 +74,7 @@ export const activityRouter = createTRPCRouter({
         description: z.string().min(1),
         duration: z.number().positive(),
         intensity: z.enum(["low", "moderate", "high"]),
+        timestamp: z.date().optional(), // Support new timestamp field
         date: z.date(),
         hour: z.date(),
         notes: z.string().optional(),
@@ -89,6 +90,9 @@ export const activityRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
+
+      // Use timestamp if provided, otherwise fall back to hour
+      const entryTimestamp = input.timestamp || input.hour;
 
       // Get user's weight for calorie calculation
       const latestWeight = await ctx.db.weightEntry.findFirst({
@@ -125,6 +129,7 @@ export const activityRouter = createTRPCRouter({
           description: input.description,
           duration: input.duration,
           intensity: input.intensity,
+          timestamp: entryTimestamp, // Add timestamp field
           caloriesBurned,
           caloriesManuallyEntered: !!input.caloriesBurned, // Set to true if user provided calories
           date: input.date,
@@ -268,12 +273,27 @@ export const activityRouter = createTRPCRouter({
       const entries = await ctx.db.activityEntry.findMany({
         where: {
           userId,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          // Use timestamp field for filtering, with fallback to date field
+          OR: [
+            {
+              timestamp: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+            {
+              timestamp: null,
+              date: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+          ],
         },
-        orderBy: { hour: "asc" },
+        orderBy: [
+          { timestamp: "asc" },
+          { hour: "asc" }, // Fallback ordering
+        ],
       });
 
       return entries;

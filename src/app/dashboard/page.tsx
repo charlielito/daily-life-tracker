@@ -18,7 +18,14 @@ import { AlertTriangle, Crown, Zap, Flame, User } from "lucide-react";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [today] = useState(new Date());
+  
+  // Ensure today is properly normalized to start of day in local timezone
+  const [today] = useState(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  });
+  
   const [showWeightPrompt, setShowWeightPrompt] = useState(false);
 
   // Redirect to sign-in if not authenticated
@@ -93,7 +100,10 @@ export default function DashboardPage() {
 
   // Check if we should show weight prompt (only for today, and only if no weight exists)
   useEffect(() => {
-    if (session && !weightLoading && !todayWeight && format(today, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")) {
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    if (session && !weightLoading && !todayWeight && today.getTime() === currentDate.getTime()) {
       // Show prompt after a short delay to let the dashboard load first
       const timer = setTimeout(() => setShowWeightPrompt(true), 1000);
       return () => clearTimeout(timer);
@@ -540,7 +550,7 @@ export default function DashboardPage() {
               {todayIntestinal.length > 0 && (
                 <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                   <p className="font-medium">Latest Entry:</p>
-                  <p>{format(new Date(todayIntestinal[todayIntestinal.length - 1].hour), "h:mm a")} • Pain: {todayIntestinal[todayIntestinal.length - 1].painLevel}/10</p>
+                  <p>{format(new Date(todayIntestinal[todayIntestinal.length - 1].timestamp || todayIntestinal[todayIntestinal.length - 1].hour), "h:mm a")} • Pain: {todayIntestinal[todayIntestinal.length - 1].painLevel}/10</p>
                 </div>
               )}
             </CardContent>
@@ -604,7 +614,7 @@ export default function DashboardPage() {
                             <div className="flex-1">
                               <p className="font-medium text-sm">{entry.description}</p>
                               <p className="text-xs text-gray-500">
-                                {format(new Date(entry.hour), "h:mm a")}
+                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
                               </p>
                             </div>
                             {/* Small image thumbnail */}
@@ -692,7 +702,7 @@ export default function DashboardPage() {
                             <div className="flex-1">
                               <p className="font-medium text-sm">Bristol Scale Type {entry.consistency}</p>
                               <p className="text-xs text-gray-500">
-                                {format(new Date(entry.hour), "h:mm a")}
+                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
                               </p>
                             </div>
                             {/* Small image thumbnail */}

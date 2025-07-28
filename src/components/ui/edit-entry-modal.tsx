@@ -23,17 +23,19 @@ interface EditEntryModalProps {
 
 interface FoodFormData {
   description: string;
+  timestamp: string; // New field for datetime-local input
   date: string;
   hour: string;
 }
 
 interface HealthFormData {
+  timestamp: string; // New field for datetime-local input
   date: string;
   hour: string;
   consistency: string;
   color: string;
   painLevel: number;
-  notes?: string;
+  notes: string;
 }
 
 const BRISTOL_SCALE = [
@@ -81,11 +83,18 @@ export function EditEntryModal({
   useEffect(() => {
     if (isOpen && entry) {
       setUploadedImageUrl(entry.imageUrl);
+      
+      // Convert timestamp or hour to datetime-local format
+      const entryTimestamp = entry.timestamp || entry.hour;
+      const formattedTimestamp = entryTimestamp ? format(new Date(entryTimestamp), "yyyy-MM-dd'T'HH:mm") : "";
+      
       reset(type === "food" ? {
         description: entry.description || "",
+        timestamp: formattedTimestamp,
         date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
         hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
       } : {
+        timestamp: formattedTimestamp,
         date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
         hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
         consistency: entry.consistency || "4",
@@ -97,27 +106,28 @@ export function EditEntryModal({
   }, [isOpen, entry, reset, type]);
 
   const onSubmit = (data: FoodFormData | HealthFormData) => {
-    const [hours, minutes] = data.hour.split(':');
-    const [year, month, day] = data.date.split('-').map(Number);
-    const entryDate = new Date(year, month - 1, day);
-    const entryTime = new Date(year, month - 1, day);
-    entryTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    // Parse the datetime-local input
+    const timestamp = new Date(data.timestamp);
+    const entryDate = new Date(timestamp);
+    entryDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
 
     if (type === "food") {
       const foodData = data as FoodFormData;
       onSave({
         id: entry.id,
         description: foodData.description,
-        date: entryDate,
-        hour: entryTime,
+        timestamp: timestamp, // Use new timestamp field
+        date: entryDate, // Keep for backward compatibility
+        hour: timestamp, // Keep for backward compatibility
         imageUrl: uploadedImageUrl,
       });
     } else {
       const healthData = data as HealthFormData;
       onSave({
         id: entry.id,
-        date: entryDate,
-        hour: entryTime,
+        timestamp: timestamp, // Use new timestamp field
+        date: entryDate, // Keep for backward compatibility
+        hour: timestamp, // Keep for backward compatibility
         consistency: healthData.consistency,
         color: healthData.color,
         painLevel: healthData.painLevel,
@@ -167,43 +177,47 @@ export function EditEntryModal({
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                {...register("date", { required: "Please select a date" })}
-              />
-              {errors.date && (
-                <p className="text-red-500 text-sm">{errors.date.message}</p>
-              )}
-            </div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-1">
+                  {type === "food" ? "When did you eat this?" : "When did this occur?"}
+                </label>
+                <input
+                  {...register("timestamp", { required: "Date and time are required" })}
+                  type="datetime-local"
+                  id="timestamp"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.timestamp && (
+                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="hour">Time</Label>
-              <Input
-                id="hour"
-                type="time"
-                {...register("hour", { required: "Please set the time" })}
-              />
-              {errors.hour && (
-                <p className="text-red-500 text-sm">{errors.hour.message}</p>
-              )}
-            </div>
+              {/* Hidden fields for backward compatibility */}
+              <input type="hidden" {...register("date")} />
+              <input type="hidden" {...register("hour")} />
 
             {type === "food" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Meal Description</Label>
+                  <Label htmlFor="description">Food Description</Label>
                   <Textarea
                     id="description"
-                    placeholder="e.g., Grilled chicken breast with rice and broccoli"
-                    {...register("description", { required: "Please describe your meal" })}
+                    placeholder="Describe what you ate..."
+                    {...register("description", { required: "Description is required" })}
                   />
-                  {(errors as any).description && (
-                    <p className="text-red-500 text-sm">{(errors as any).description.message}</p>
+                  {errors.description && (
+                    <p className="text-red-500 text-sm">{errors.description.message}</p>
                   )}
                 </div>
+
+                <ImageUpload
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  currentImage={uploadedImageUrl}
+                  label="Food Photo (Optional)"
+                  disabled={isLoading}
+                />
               </>
             ) : (
               <>
@@ -220,8 +234,8 @@ export function EditEntryModal({
                       </option>
                     ))}
                   </select>
-                  {(errors as any).consistency && (
-                    <p className="text-red-500 text-sm">{(errors as any).consistency.message}</p>
+                  {errors.consistency && (
+                    <p className="text-red-500 text-sm">{errors.consistency.message}</p>
                   )}
                 </div>
 
@@ -238,8 +252,8 @@ export function EditEntryModal({
                       </option>
                     ))}
                   </select>
-                  {(errors as any).color && (
-                    <p className="text-red-500 text-sm">{(errors as any).color.message}</p>
+                  {errors.color && (
+                    <p className="text-red-500 text-sm">{errors.color.message}</p>
                   )}
                 </div>
 
@@ -247,41 +261,39 @@ export function EditEntryModal({
                   <Label htmlFor="painLevel">Pain Level (0-10)</Label>
                   <Input
                     id="painLevel"
-                    type="range"
+                    type="number"
                     min="0"
                     max="10"
-                    {...register("painLevel", { valueAsNumber: true })}
-                    className="w-full"
+                    {...register("painLevel", { 
+                      required: "Please rate pain level",
+                      min: { value: 0, message: "Pain level must be at least 0" },
+                      max: { value: 10, message: "Pain level must be at most 10" }
+                    })}
                   />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>0 - No pain</span>
-                    <span className="font-medium text-gray-700">Current: {watch("painLevel")}</span>
-                    <span>10 - Severe pain</span>
-                  </div>
-                  {(errors as any).painLevel && (
-                    <p className="text-red-500 text-sm">{(errors as any).painLevel.message}</p>
+                  {errors.painLevel && (
+                    <p className="text-red-500 text-sm">{errors.painLevel.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Label htmlFor="notes">Notes (Optional)</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Any additional observations, symptoms, or notes..."
+                    placeholder="Any additional notes..."
                     {...register("notes")}
                   />
                 </div>
+
+                <ImageUpload
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  currentImage={uploadedImageUrl}
+                  label="Photo (Optional)"
+                  disabled={isLoading}
+                />
               </>
             )}
-
-            {/* Image Upload */}
-            <ImageUpload
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              currentImage={uploadedImageUrl}
-              label={`${type === "food" ? "Food" : "Health"} Photo (Optional)`}
-              disabled={isLoading}
-            />
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">

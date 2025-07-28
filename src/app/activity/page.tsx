@@ -20,6 +20,7 @@ interface ActivityFormData {
   description: string;
   duration: string;
   intensity: "low" | "moderate" | "high";
+  timestamp: string; // New field for datetime-local input
   date: string;
   hour: string;
   notes?: string;
@@ -45,6 +46,7 @@ export default function ActivityPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<ActivityFormData>({
     defaultValues: {
+      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       date: format(new Date(), "yyyy-MM-dd"),
       hour: format(new Date(), "HH:mm"),
       intensity: "moderate",
@@ -52,15 +54,14 @@ export default function ActivityPage() {
     }
   });
 
-  // Watch the date field to update selectedDate when it changes
-  const watchedDate = watch("date");
+  // Watch the timestamp field to update selectedDate when it changes
+  const watchedTimestamp = watch("timestamp");
   useEffect(() => {
-    if (watchedDate) {
-      const [year, month, day] = watchedDate.split('-').map(Number);
-      const newDate = new Date(year, month - 1, day);
-      setSelectedDate(newDate);
+    if (watchedTimestamp) {
+      const timestampDate = new Date(watchedTimestamp);
+      setSelectedDate(timestampDate);
     }
-  }, [watchedDate]);
+  }, [watchedTimestamp]);
 
   const utils = api.useContext();
   
@@ -77,6 +78,7 @@ export default function ActivityPage() {
         description: "",
         duration: "",
         intensity: "moderate",
+        timestamp: format(selectedDate, "yyyy-MM-dd'T'HH:mm"), // Reset timestamp to current date
         date: format(selectedDate, "yyyy-MM-dd"),
         hour: format(new Date(), "HH:mm"),
         notes: "",
@@ -127,19 +129,20 @@ export default function ActivityPage() {
   );
 
   const onSubmit = (data: ActivityFormData) => {
-    const [hours, minutes] = data.hour.split(':');
-    const [year, month, day] = data.date.split('-').map(Number);
-    const activityDate = new Date(year, month - 1, day);
-    const activityTime = new Date(year, month - 1, day);
-    activityTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    // Parse the datetime-local input
+    const timestamp = new Date(data.timestamp);
+    
+    const activityDate = new Date(timestamp);
+    activityDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
 
     createActivityEntry.mutate({
       activityType: data.activityType,
       description: data.description,
       duration: parseInt(data.duration),
       intensity: data.intensity,
-      date: activityDate,
-      hour: activityTime,
+      timestamp: timestamp, // Use the new timestamp field
+      date: activityDate, // Keep for backward compatibility
+      hour: timestamp, // Keep for backward compatibility
       notes: data.notes,
       caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : undefined,
     });
@@ -265,26 +268,23 @@ export default function ActivityPage() {
               {/* Date and Time */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="timestamp">Date and Time</Label>
                   <Input
-                    type="date"
-                    {...register("date", { required: "Date is required" })}
+                    type="datetime-local"
+                    {...register("timestamp", { required: "Date and time are required" })}
                   />
-                  {errors.date && (
-                    <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
+                  {errors.timestamp && (
+                    <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="hour">Time</Label>
-                  <Input
-                    type="time"
-                    {...register("hour", { required: "Time is required" })}
-                  />
-                  {errors.hour && (
-                    <p className="text-red-500 text-sm mt-1">{errors.hour.message}</p>
-                  )}
+                  {/* Empty div to maintain grid layout */}
                 </div>
               </div>
+
+              {/* Hidden fields for backward compatibility */}
+              <input type="hidden" {...register("date")} />
+              <input type="hidden" {...register("hour")} />
 
               {/* Activity Type */}
               <div>
@@ -450,7 +450,7 @@ export default function ActivityPage() {
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(new Date(entry.hour), "h:mm a")}
+                              {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
                             </span>
                             <span>{entry.duration} min</span>
                             <span className="flex items-center gap-1">

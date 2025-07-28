@@ -52,6 +52,7 @@ model MacroEntry {
   userId           String
   description      String
   imageUrl         String?
+  timestamp        DateTime? // New unified timestamp field (optional during migration)
   hour             DateTime
   date             DateTime
   calculatedMacros String? // JSON stored as string 
@@ -83,6 +84,7 @@ model WeightEntry {
 model IntestinalEntry {
   id          String   @id @default(cuid())
   userId      String
+  timestamp   DateTime? // New unified timestamp field (optional during migration)
   date        DateTime
   hour        DateTime
   consistency String // Bristol Stool Scale (1-7)
@@ -106,6 +108,7 @@ model ActivityEntry {
   intensity        String   // "low", "moderate", "high"
   caloriesBurned   Int      // Calories burned (either calculated or user-provided)
   caloriesManuallyEntered  Boolean  @default(false) // True if calories were provided by the user
+  timestamp        DateTime? // New unified timestamp field (optional during migration)
   date             DateTime // Date of the activity
   hour             DateTime // Time of the activity
   notes            String?  // Optional notes

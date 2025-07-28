@@ -111,6 +111,8 @@ export const macrosRouter = createTRPCRouter({
       z.object({
         description: z.string().min(1),
         imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
+        // Support both old and new timestamp approaches
+        timestamp: z.date().optional(),
         hour: z.date(),
         date: z.date(),
       })
@@ -128,6 +130,9 @@ export const macrosRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
 
+      // Use timestamp if provided, otherwise fall back to hour (which contains both date and time)
+      const entryTimestamp = input.timestamp || input.hour;
+
       // Check AI usage limits
       await checkAiUsageLimit(userId, ctx.db);
 
@@ -144,9 +149,10 @@ export const macrosRouter = createTRPCRouter({
           userId,
           description: input.description,
           imageUrl: input.imageUrl,
+          timestamp: entryTimestamp,
           hour: input.hour,
           date: input.date,
-          calculatedMacros,
+          calculatedMacros: calculatedMacros,
         },
       });
 
@@ -271,12 +277,27 @@ export const macrosRouter = createTRPCRouter({
       const entries = await ctx.db.macroEntry.findMany({
         where: {
           userId,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          // Use timestamp field for filtering, with fallback to date field
+          OR: [
+            {
+              timestamp: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+            {
+              timestamp: null,
+              date: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+          ],
         },
-        orderBy: { hour: "asc" },
+        orderBy: [
+          { timestamp: "asc" },
+          { hour: "asc" }, // Fallback ordering
+        ],
       });
 
       // Parse JSON strings back to objects

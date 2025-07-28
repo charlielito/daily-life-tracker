@@ -25,6 +25,7 @@ interface ActivityFormData {
   description: string;
   duration: number;
   intensity: "low" | "moderate" | "high";
+  timestamp: string; // New field for datetime-local input
   date: string;
   hour: string;
   notes?: string;
@@ -46,39 +47,40 @@ export function ActivityEditModal({
 
   // Reset form when entry changes
   useEffect(() => {
-    if (entry) {
-      const entryDate = new Date(entry.date);
-      const entryHour = new Date(entry.hour);
+    if (isOpen && entry) {
+      // Convert timestamp or hour to datetime-local format  
+      const entryTimestamp = entry.timestamp || entry.hour;
+      const formattedTimestamp = entryTimestamp ? format(new Date(entryTimestamp), "yyyy-MM-dd'T'HH:mm") : "";
       
       reset({
-        activityType: entry.activityType,
-        description: entry.description,
-        duration: entry.duration,
-        intensity: entry.intensity,
-        date: format(entryDate, "yyyy-MM-dd"),
-        hour: format(entryHour, "HH:mm"),
+        activityType: entry.activityType || "",
+        description: entry.description || "",
+        duration: entry.duration?.toString() || "",
+        intensity: entry.intensity || "moderate",
+        timestamp: formattedTimestamp,
+        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
+        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
         notes: entry.notes || "",
-        caloriesBurned: entry.caloriesBurned || "",
+        caloriesBurned: entry.caloriesBurned?.toString() || "",
       });
     }
-  }, [entry, reset]);
+  }, [isOpen, entry, reset]);
 
-  const onSubmit = (data: ActivityFormData) => {
-    const [hours, minutes] = data.hour.split(':');
-    const [year, month, day] = data.date.split('-').map(Number);
-    
-    const activityDate = new Date(year, month - 1, day);
-    const activityTime = new Date(year, month - 1, day);
-    activityTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+  const onSubmit = (data: any) => {
+    // Parse the datetime-local input
+    const timestamp = new Date(data.timestamp);
+    const entryDate = new Date(timestamp);
+    entryDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
 
     onSave({
       id: entry.id,
       activityType: data.activityType,
       description: data.description,
-      duration: data.duration,
+      duration: parseInt(data.duration),
       intensity: data.intensity,
-      date: activityDate,
-      hour: activityTime,
+      timestamp: timestamp, // Use new timestamp field
+      date: entryDate, // Keep for backward compatibility
+      hour: timestamp, // Keep for backward compatibility
       notes: data.notes,
       caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : undefined,
     });
@@ -110,28 +112,24 @@ export function ActivityEditModal({
           {!showDeleteConfirm ? (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    type="date"
-                    {...register("date", { required: "Date is required" })}
-                  />
-                  {errors.date && (
-                    <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="hour">Time</Label>
-                  <Input
-                    type="time"
-                    {...register("hour", { required: "Time is required" })}
-                  />
-                  {errors.hour && (
-                    <p className="text-red-500 text-sm mt-1">{errors.hour.message}</p>
-                  )}
-                </div>
+              <div>
+                <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-1">
+                  When did you do this activity?
+                </label>
+                <input
+                  {...register("timestamp", { required: "Date and time are required" })}
+                  type="datetime-local"
+                  id="timestamp"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.timestamp && (
+                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                )}
               </div>
+
+              {/* Hidden fields for backward compatibility */}
+              <input type="hidden" {...register("date")} />
+              <input type="hidden" {...register("hour")} />
 
               {/* Activity Type */}
               <div>
@@ -259,7 +257,7 @@ export function ActivityEditModal({
                   <p className="text-sm font-medium">{entry.activityType}</p>
                   <p className="text-sm text-gray-600">{entry.description}</p>
                   <p className="text-xs text-gray-500">
-                    {format(new Date(entry.hour), "MMM d, h:mm a")} • {entry.duration} minutes
+                    {format(new Date(entry.timestamp || entry.hour), "MMM d, h:mm a")} • {entry.duration} minutes
                   </p>
                 </div>
               </div>

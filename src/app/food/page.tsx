@@ -20,6 +20,7 @@ interface FoodFormData {
   description: string;
   date: string;
   hour: string;
+  timestamp: string; // New field for datetime-local input
 }
 
 export default function FoodPage() {
@@ -42,21 +43,20 @@ export default function FoodPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<FoodFormData>({
     defaultValues: {
+      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       date: format(new Date(), "yyyy-MM-dd"),
       hour: format(new Date(), "HH:mm"),
     }
   });
 
-  // Watch the date field to update selectedDate when it changes
-  const watchedDate = watch("date");
+  // Watch the timestamp field to update selectedDate when it changes
+  const watchedTimestamp = watch("timestamp");
   useEffect(() => {
-    if (watchedDate) {
-      // Create date in local timezone to avoid timezone shifts
-      const [year, month, day] = watchedDate.split('-').map(Number);
-      const newDate = new Date(year, month - 1, day); // month is 0-indexed
-      setSelectedDate(newDate);
+    if (watchedTimestamp) {
+      const timestampDate = new Date(watchedTimestamp);
+      setSelectedDate(timestampDate);
     }
-  }, [watchedDate]);
+  }, [watchedTimestamp]);
 
   const utils = api.useContext();
   
@@ -64,6 +64,7 @@ export default function FoodPage() {
     onSuccess: () => {
       reset({
         description: "",
+        timestamp: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
         date: format(selectedDate, "yyyy-MM-dd"),
         hour: format(new Date(), "HH:mm"),
       });
@@ -105,19 +106,19 @@ export default function FoodPage() {
   );
 
   const onSubmit = (data: FoodFormData) => {
-    const [hours, minutes] = data.hour.split(':');
+    // Parse the datetime-local input
+    const timestamp = new Date(data.timestamp);
     
     // Create dates in local timezone to avoid timezone shifts
-    const [year, month, day] = data.date.split('-').map(Number);
-    const mealDate = new Date(year, month - 1, day); // month is 0-indexed
-    const mealTime = new Date(year, month - 1, day); // month is 0-indexed
-    mealTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
+    const mealDate = new Date(timestamp);
+    mealDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
+    
     createMacroEntry.mutate({
       description: data.description,
-      hour: mealTime,
-      date: mealDate,
-      imageUrl: uploadedImageUrl, // Include the uploaded image URL
+      timestamp: timestamp, // Use the new timestamp field
+      hour: timestamp, // Keep for backward compatibility
+      date: mealDate, // Keep for backward compatibility
+      imageUrl: uploadedImageUrl,
     });
   };
 
@@ -221,17 +222,22 @@ export default function FoodPage() {
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
                 <Input
-                  id="date"
-                  type="date"
-                  {...register("date", { required: "Please select a date" })}
+                  {...register("timestamp", { required: "Date and time are required" })}
+                  type="datetime-local"
+                  id="timestamp"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.date && (
-                  <p className="text-red-500 text-sm">{errors.date.message}</p>
+                {errors.timestamp && (
+                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
                   You can log meals for any date, not just today
                 </p>
               </div>
+
+              {/* Hidden fields for backward compatibility */}
+              <input type="hidden" {...register("date")} />
+              <input type="hidden" {...register("hour")} />
 
               <div className="space-y-2">
                 <Label htmlFor="description">Meal Description</Label>
@@ -253,18 +259,6 @@ export default function FoodPage() {
                 label="Food Photo (Optional)"
                 disabled={createMacroEntry.isLoading}
               />
-
-              <div className="space-y-2">
-                <Label htmlFor="hour">Time</Label>
-                <Input
-                  id="hour"
-                  type="time"
-                  {...register("hour", { required: "Please set the time" })}
-                />
-                {errors.hour && (
-                  <p className="text-red-500 text-sm">{errors.hour.message}</p>
-                )}
-              </div>
 
               <Button 
                 type="submit" 
@@ -332,7 +326,7 @@ export default function FoodPage() {
                             <div className="flex-1">
                               <p className="font-medium">{entry.description}</p>
                               <p className="text-sm text-gray-500">
-                                {format(new Date(entry.hour), "h:mm a")}
+                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
                               </p>
                             </div>
                             {/* Display image if available */}

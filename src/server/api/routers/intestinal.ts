@@ -7,6 +7,8 @@ export const intestinalRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
+        // Support both old and new timestamp approaches
+        timestamp: z.date().optional(),
         date: z.date(),
         hour: z.date(),
         consistency: z.string().min(1),
@@ -26,10 +28,20 @@ export const intestinalRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
 
+      // Use timestamp if provided, otherwise fall back to hour (which contains both date and time)
+      const entryTimestamp = input.timestamp || input.hour;
+
       const entry = await ctx.db.intestinalEntry.create({
         data: {
           userId,
-          ...input,
+          timestamp: entryTimestamp,
+          date: input.date,
+          hour: input.hour,
+          consistency: input.consistency,
+          color: input.color,
+          painLevel: input.painLevel,
+          notes: input.notes,
+          imageUrl: input.imageUrl,
         },
       });
 
@@ -137,12 +149,27 @@ export const intestinalRouter = createTRPCRouter({
       return ctx.db.intestinalEntry.findMany({
         where: {
           userId,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          // Use timestamp field for filtering, with fallback to date field
+          OR: [
+            {
+              timestamp: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+            {
+              timestamp: null,
+              date: {
+                gte: startOfDay,
+                lte: endOfDay,
+              },
+            },
+          ],
         },
-        orderBy: { hour: "asc" },
+        orderBy: [
+          { timestamp: "asc" },
+          { hour: "asc" }, // Fallback ordering
+        ],
       });
     }),
 
@@ -166,12 +193,27 @@ export const intestinalRouter = createTRPCRouter({
       return ctx.db.intestinalEntry.findMany({
         where: {
           userId,
-          date: {
-            gte: input.startDate,
-            lte: input.endDate,
-          },
+          // Use timestamp field for filtering, with fallback to date field
+          OR: [
+            {
+              timestamp: {
+                gte: input.startDate,
+                lte: input.endDate,
+              },
+            },
+            {
+              timestamp: null,
+              date: {
+                gte: input.startDate,
+                lte: input.endDate,
+              },
+            },
+          ],
         },
-        orderBy: { hour: "asc" },
+        orderBy: [
+          { timestamp: "asc" },
+          { hour: "asc" }, // Fallback ordering
+        ],
       });
     }),
 }); 
