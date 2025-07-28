@@ -3,6 +3,17 @@ import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
+/**
+ * Normalize a date to UTC midnight (00:00:00.000Z) to ensure consistent date handling
+ * regardless of timezone differences between frontend and backend
+ */
+function normalizeToUTCMidnight(date: Date): Date {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+}
+
 export const weightRouter = createTRPCRouter({
   // Create or update weight for a specific date
   upsert: protectedProcedure
@@ -21,10 +32,10 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
+      const normalizedDate = normalizeToUTCMidnight(input.date);
 
-      // Normalize date to start of day to ensure one entry per day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
+      console.log("⚖️ [DEBUG] Weight upsert - Input date:", input.date.toISOString());
+      console.log("⚖️ [DEBUG] Weight upsert - Normalized date:", normalizedDate.toISOString());
 
       const weightEntry = await ctx.db.weightEntry.upsert({
         where: {
@@ -58,10 +69,12 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
+      const normalizedDate = normalizeToUTCMidnight(input.date);
       
-      // Normalize date to start of day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
+      console.log("⚖️ [DEBUG] Weight getByDate - Input date:", input.date);
+      console.log("⚖️ [DEBUG] Weight getByDate - Input date ISO:", input.date.toISOString());
+      console.log("⚖️ [DEBUG] Weight getByDate - Normalized date:", normalizedDate);
+      console.log("⚖️ [DEBUG] Weight getByDate - Normalized date ISO:", normalizedDate.toISOString());
 
       const weightEntry = await ctx.db.weightEntry.findUnique({
         where: {
@@ -107,10 +120,7 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
-      
-      // Normalize date to start of day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
+      const normalizedDate = normalizeToUTCMidnight(input.date);
 
       const deletedEntry = await ctx.db.weightEntry.delete({
         where: {
