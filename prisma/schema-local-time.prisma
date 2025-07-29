@@ -1,0 +1,125 @@
+// This is the new Prisma schema with local time approach
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "./generated/local-time-client"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["local_time"]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Subscription fields
+  subscriptionStatus String   @default("free") // "free", "trial", "active", "cancelled", "unlimited"
+  subscriptionId     String? // Stripe subscription ID
+  customerId         String? // Stripe customer ID
+  trialEndDate       DateTime?
+  subscriptionEndDate DateTime?
+  
+  // Usage tracking (monthly limits)
+  monthlyAiUsage      Int      @default(0)
+  monthlyUploads      Int      @default(0)
+  lastUsageReset      DateTime @default(now()) // Track when usage was last reset
+  
+  // Admin override for unlimited access
+  isUnlimited        Boolean  @default(false) // Admin can set this to true for free unlimited access
+
+  activityLevel       String?           @default("sedentary")
+  age                 Int?
+  gender              String?
+  heightCm            Float?
+  
+  // Relations
+  macroEntries      MacroEntry[]
+  intestinalEntries IntestinalEntry[]
+  weightEntries     WeightEntry[]
+  activityEntries   ActivityEntry[]
+  
+  @@map("users")
+  @@schema("local_time")
+}
+
+model MacroEntry {
+  id               String   @id @default(cuid())
+  userId           String
+  description      String
+  imageUrl         String?
+  localDateTime    DateTime // Single field storing user's local date and time
+  calculatedMacros String? // JSON stored as string 
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("macro_entries")
+  @@schema("local_time")
+}
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  localDate DateTime // Local date (normalized to start of day in local time)
+  weight    Float    // Weight in kg
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ensure one weight entry per user per day
+  @@unique([userId, localDate])
+  @@map("weight_entries")
+  @@schema("local_time")
+}
+
+model IntestinalEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  localDateTime DateTime // Single field storing user's local date and time
+  consistency   String // Bristol Stool Scale (1-7)
+  color         String
+  painLevel     Int // 0-10 scale
+  notes         String?
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("intestinal_entries")
+  @@schema("local_time")
+}
+
+model ActivityEntry {
+  id               String   @id @default(cuid())
+  userId           String
+  activityType     String   // Type of activity (e.g., "Running", "Cycling", "Weight Training")
+  description      String   // User description of the activity
+  duration         Int      // Duration in minutes
+  intensity        String   // "low", "moderate", "high"
+  caloriesBurned   Int      // Calories burned (either calculated or user-provided)
+  caloriesManuallyEntered  Boolean  @default(false) // True if calories were provided by the user
+  localDateTime    DateTime // Single field storing user's local date and time
+  notes            String?  // Optional notes
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("activity_entries")
+  @@schema("local_time")
+} 
