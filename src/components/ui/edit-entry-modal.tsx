@@ -9,6 +9,7 @@ import { Textarea } from "./textarea";
 import { ImageUpload } from "./image-upload";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface EditEntryModalProps {
   isOpen: boolean;
@@ -18,22 +19,7 @@ interface EditEntryModalProps {
   entry: any;
   type: "food" | "health";
   isLoading?: boolean;
-  error?: any; // Add error prop
-}
-
-interface FoodFormData {
-  description: string;
-  date: string;
-  hour: string;
-}
-
-interface HealthFormData {
-  date: string;
-  hour: string;
-  consistency: string;
-  color: string;
-  painLevel: number;
-  notes?: string;
+  error?: any;
 }
 
 const BRISTOL_SCALE = [
@@ -58,70 +44,58 @@ export function EditEntryModal({
   entry,
   type,
   isLoading = false,
-  error = null, // Add error prop
+  error
 }: EditEntryModalProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<FoodFormData | HealthFormData>({
-    defaultValues: type === "food" ? {
-      description: entry?.description || "",
-      date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-      hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
-    } : {
-      date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-      hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
-      consistency: entry?.consistency || "4",
-      color: entry?.color || "Brown",
-      painLevel: entry?.painLevel || 0,
-      notes: entry?.notes || "",
-    }
-  });
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<any>();
 
+  // Reset form when entry changes
   useEffect(() => {
     if (isOpen && entry) {
       setUploadedImageUrl(entry.imageUrl);
-      reset(type === "food" ? {
-        description: entry.description || "",
-        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
-      } : {
-        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
-        consistency: entry.consistency || "4",
-        color: entry.color || "Brown",
-        painLevel: entry.painLevel || 0,
-        notes: entry.notes || "",
-      });
+      
+      // Convert localDateTime to datetime-local format for display
+      const localDisplayTime = convertUTCToLocalDisplay(entry.localDateTime);
+      const formattedTimestamp = format(localDisplayTime, "yyyy-MM-dd'T'HH:mm");
+      
+      if (type === "food") {
+        reset({
+          description: entry.description || "",
+          localDateTime: formattedTimestamp,
+        });
+      } else {
+        reset({
+          localDateTime: formattedTimestamp,
+          consistency: entry.consistency || "4",
+          color: entry.color || "Brown",
+          painLevel: entry.painLevel || 0,
+          notes: entry.notes || "",
+        });
+      }
     }
-  }, [isOpen, entry, reset, type]);
+  }, [isOpen, entry, type, reset]);
 
-  const onSubmit = (data: FoodFormData | HealthFormData) => {
-    const [hours, minutes] = data.hour.split(':');
-    const [year, month, day] = data.date.split('-').map(Number);
-    const entryDate = new Date(year, month - 1, day);
-    const entryTime = new Date(year, month - 1, day);
-    entryTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+  const onSubmit = (data: any) => {
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
 
     if (type === "food") {
-      const foodData = data as FoodFormData;
       onSave({
         id: entry.id,
-        description: foodData.description,
-        date: entryDate,
-        hour: entryTime,
+        description: data.description,
+        localDateTime: localDateTime,
         imageUrl: uploadedImageUrl,
       });
     } else {
-      const healthData = data as HealthFormData;
       onSave({
         id: entry.id,
-        date: entryDate,
-        hour: entryTime,
-        consistency: healthData.consistency,
-        color: healthData.color,
-        painLevel: healthData.painLevel,
-        notes: healthData.notes,
+        localDateTime: localDateTime,
+        consistency: data.consistency,
+        color: data.color,
+        painLevel: data.painLevel,
+        notes: data.notes,
         imageUrl: uploadedImageUrl,
       });
     }
@@ -167,43 +141,43 @@ export function EditEntryModal({
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                {...register("date", { required: "Please select a date" })}
-              />
-              {errors.date && (
-                <p className="text-red-500 text-sm">{errors.date.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="hour">Time</Label>
-              <Input
-                id="hour"
-                type="time"
-                {...register("hour", { required: "Please set the time" })}
-              />
-              {errors.hour && (
-                <p className="text-red-500 text-sm">{errors.hour.message}</p>
-              )}
-            </div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  {type === "food" ? "When did you eat this?" : "When did this occur?"}
+                </label>
+                <input
+                  {...register("localDateTime", { required: "Date and time are required" })}
+                  type="datetime-local"
+                  id="localDateTime"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.localDateTime && (
+                  <p className="text-red-500 text-sm mt-1">{(errors.localDateTime as any)?.message}</p>
+                )}
+              </div>
 
             {type === "food" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Meal Description</Label>
+                  <Label htmlFor="description">Food Description</Label>
                   <Textarea
                     id="description"
-                    placeholder="e.g., Grilled chicken breast with rice and broccoli"
-                    {...register("description", { required: "Please describe your meal" })}
+                    placeholder="Describe what you ate..."
+                    {...register("description", { required: "Description is required" })}
                   />
-                  {(errors as any).description && (
-                    <p className="text-red-500 text-sm">{(errors as any).description.message}</p>
+                  {errors.description && (
+                    <p className="text-red-500 text-sm">{(errors.description as any)?.message}</p>
                   )}
                 </div>
+
+                <ImageUpload
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  currentImage={uploadedImageUrl}
+                  label="Food Photo (Optional)"
+                  disabled={isLoading}
+                />
               </>
             ) : (
               <>
@@ -220,8 +194,8 @@ export function EditEntryModal({
                       </option>
                     ))}
                   </select>
-                  {(errors as any).consistency && (
-                    <p className="text-red-500 text-sm">{(errors as any).consistency.message}</p>
+                  {errors.consistency && (
+                    <p className="text-red-500 text-sm">{(errors.consistency as any)?.message}</p>
                   )}
                 </div>
 
@@ -238,8 +212,8 @@ export function EditEntryModal({
                       </option>
                     ))}
                   </select>
-                  {(errors as any).color && (
-                    <p className="text-red-500 text-sm">{(errors as any).color.message}</p>
+                  {errors.color && (
+                    <p className="text-red-500 text-sm">{(errors.color as any)?.message}</p>
                   )}
                 </div>
 
@@ -264,24 +238,24 @@ export function EditEntryModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Label htmlFor="notes">Notes (Optional)</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Any additional observations, symptoms, or notes..."
+                    placeholder="Any additional notes..."
                     {...register("notes")}
                   />
                 </div>
+
+                <ImageUpload
+                  onImageUpload={handleImageUpload}
+                  onImageRemove={handleImageRemove}
+                  currentImage={uploadedImageUrl}
+                  label="Photo (Optional)"
+                  disabled={isLoading}
+                />
               </>
             )}
-
-            {/* Image Upload */}
-            <ImageUpload
-              onImageUpload={handleImageUpload}
-              onImageRemove={handleImageRemove}
-              currentImage={uploadedImageUrl}
-              label={`${type === "food" ? "Food" : "Health"} Photo (Optional)`}
-              disabled={isLoading}
-            />
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">

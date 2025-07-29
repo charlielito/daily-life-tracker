@@ -3,6 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
+  output          = "./generated/local-time-client"
   previewFeatures = ["multiSchema"]
 }
 

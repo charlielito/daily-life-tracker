@@ -74,8 +74,7 @@ export const activityRouter = createTRPCRouter({
         description: z.string().min(1),
         duration: z.number().positive(),
         intensity: z.enum(["low", "moderate", "high"]),
-        date: z.date(),
-        hour: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
         notes: z.string().optional(),
         caloriesBurned: z.number().positive().optional(), // User-provided calories (optional)
       })
@@ -93,7 +92,7 @@ export const activityRouter = createTRPCRouter({
       // Get user's weight for calorie calculation
       const latestWeight = await ctx.db.weightEntry.findFirst({
         where: { userId },
-        orderBy: { date: "desc" },
+        orderBy: { localDate: "desc" },
       });
 
       if (!latestWeight) {
@@ -125,10 +124,9 @@ export const activityRouter = createTRPCRouter({
           description: input.description,
           duration: input.duration,
           intensity: input.intensity,
+          localDateTime: input.localDateTime,
           caloriesBurned,
           caloriesManuallyEntered: !!input.caloriesBurned, // Set to true if user provided calories
-          date: input.date,
-          hour: input.hour,
           notes: input.notes,
         },
       });
@@ -144,8 +142,7 @@ export const activityRouter = createTRPCRouter({
         description: z.string().min(1),
         duration: z.number().positive(),
         intensity: z.enum(["low", "moderate", "high"]),
-        date: z.date(),
-        hour: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
         notes: z.string().optional(),
         caloriesBurned: z.number().positive().optional(), // User-provided calories (optional)
       })
@@ -175,7 +172,7 @@ export const activityRouter = createTRPCRouter({
       // Get user's weight for calorie calculation
       const latestWeight = await ctx.db.weightEntry.findFirst({
         where: { userId },
-        orderBy: { date: "desc" },
+        orderBy: { localDate: "desc" },
       });
 
       if (!latestWeight) {
@@ -207,10 +204,9 @@ export const activityRouter = createTRPCRouter({
           description: input.description,
           duration: input.duration,
           intensity: input.intensity,
+          localDateTime: input.localDateTime,
           caloriesBurned,
           caloriesManuallyEntered: !!input.caloriesBurned, // Set to true if user provided calories
-          date: input.date,
-          hour: input.hour,
           notes: input.notes,
         },
       });
@@ -268,12 +264,14 @@ export const activityRouter = createTRPCRouter({
       const entries = await ctx.db.activityEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: startOfDay,
             lte: endOfDay,
           },
         },
-        orderBy: { hour: "asc" },
+        orderBy: {
+          localDateTime: "asc",
+        },
       });
 
       return entries;
@@ -310,11 +308,11 @@ export const activityRouter = createTRPCRouter({
       const weight = await ctx.db.weightEntry.findFirst({
         where: {
           userId,
-          date: {
+          localDate: {
             lte: endOfDay,
           },
         },
-        orderBy: { date: "desc" },
+        orderBy: { localDate: "desc" },
       });
 
       if (!weight) {
@@ -328,7 +326,7 @@ export const activityRouter = createTRPCRouter({
       const macroEntries = await ctx.db.macroEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: startOfDay,
             lte: endOfDay,
           },
@@ -347,7 +345,7 @@ export const activityRouter = createTRPCRouter({
       const activityEntries = await ctx.db.activityEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: startOfDay,
             lte: endOfDay,
           },

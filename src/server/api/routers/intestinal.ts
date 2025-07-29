@@ -7,8 +7,7 @@ export const intestinalRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        date: z.date(),
-        hour: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
         consistency: z.string().min(1),
         color: z.string().min(1),
         painLevel: z.number().min(0).max(10),
@@ -29,7 +28,12 @@ export const intestinalRouter = createTRPCRouter({
       const entry = await ctx.db.intestinalEntry.create({
         data: {
           userId,
-          ...input,
+          localDateTime: input.localDateTime,
+          consistency: input.consistency,
+          color: input.color,
+          painLevel: input.painLevel,
+          notes: input.notes,
+          imageUrl: input.imageUrl,
         },
       });
 
@@ -40,8 +44,7 @@ export const intestinalRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-        date: z.date(),
-        hour: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
         consistency: z.string().min(1),
         color: z.string().min(1),
         painLevel: z.number().min(0).max(10),
@@ -74,8 +77,7 @@ export const intestinalRouter = createTRPCRouter({
       const updatedEntry = await ctx.db.intestinalEntry.update({
         where: { id: input.id },
         data: {
-          date: input.date,
-          hour: input.hour,
+          localDateTime: input.localDateTime,
           consistency: input.consistency,
           color: input.color,
           painLevel: input.painLevel,
@@ -137,12 +139,14 @@ export const intestinalRouter = createTRPCRouter({
       return ctx.db.intestinalEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: startOfDay,
             lte: endOfDay,
           },
         },
-        orderBy: { hour: "asc" },
+        orderBy: {
+          localDateTime: "asc",
+        },
       });
     }),
 
@@ -166,12 +170,14 @@ export const intestinalRouter = createTRPCRouter({
       return ctx.db.intestinalEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: input.startDate,
             lte: input.endDate,
           },
         },
-        orderBy: { hour: "asc" },
+        orderBy: {
+          localDateTime: "asc",
+        },
       });
     }),
 }); 

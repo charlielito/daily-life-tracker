@@ -13,12 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit } from "lucide-react";
 import Image from "next/image";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface HealthFormData {
-  date: string;
-  hour: string;
+  localDateTime: string; // Single field for datetime-local input
   consistency: string;
   color: string;
   painLevel: number;
@@ -57,34 +57,30 @@ export default function HealthPage() {
     }
   }, [session, status, router]);
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<HealthFormData>({
+  const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<HealthFormData>({
     defaultValues: {
-      date: format(new Date(), "yyyy-MM-dd"),
-      hour: format(new Date(), "HH:mm"),
+      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       consistency: "4",
       color: "Brown",
       painLevel: 0,
     }
   });
 
-  // Watch the date field to update selectedDate when it changes
-  const watchedDate = watch("date");
+  // Watch the timestamp field to update selectedDate when it changes
+  const watchedTimestamp = watch("localDateTime");
   useEffect(() => {
-    if (watchedDate) {
-      // Create date in local timezone to avoid timezone shifts
-      const [year, month, day] = watchedDate.split('-').map(Number);
-      const newDate = new Date(year, month - 1, day); // month is 0-indexed
-      setSelectedDate(newDate);
+    if (watchedTimestamp) {
+      const timestampDate = new Date(watchedTimestamp);
+      setSelectedDate(timestampDate);
     }
-  }, [watchedDate]);
+  }, [watchedTimestamp]);
 
   const utils = api.useContext();
   
   const createHealthEntry = api.intestinal.create.useMutation({
     onSuccess: () => {
       reset({
-        date: format(selectedDate, "yyyy-MM-dd"),
-        hour: format(new Date(), "HH:mm"),
+        localDateTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
         consistency: "4",
         color: "Brown",
         painLevel: 0,
@@ -128,22 +124,16 @@ export default function HealthPage() {
   );
 
   const onSubmit = (data: HealthFormData) => {
-    const [hours, minutes] = data.hour.split(':');
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
     
-    // Create dates in local timezone to avoid timezone shifts
-    const [year, month, day] = data.date.split('-').map(Number);
-    const entryDate = new Date(year, month - 1, day); // month is 0-indexed
-    const entryTime = new Date(year, month - 1, day); // month is 0-indexed
-    entryTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
     createHealthEntry.mutate({
-      date: entryDate,
-      hour: entryTime,
+      localDateTime: localDateTime, // Use the converted timestamp
       consistency: data.consistency,
       color: data.color,
       painLevel: data.painLevel,
       notes: data.notes,
-      imageUrl: uploadedImageUrl, // Include the uploaded image URL
+      imageUrl: uploadedImageUrl,
     });
   };
 
@@ -231,49 +221,39 @@ export default function HealthPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  {...register("date", { required: "Please select a date" })}
-                />
-                {errors.date && (
-                  <p className="text-red-500 text-sm">{errors.date.message}</p>
-                )}
-                <p className="text-xs text-gray-500">
-                  You can log health entries for any date, not just today
-                </p>
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
+                    When did this occur?
+                  </label>
+                  <input
+                    {...register("localDateTime", { required: "Date and time are required" })}
+                    type="datetime-local"
+                    id="localDateTime"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {errors.localDateTime && (
+                    <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hour">Time</Label>
-                <Input
-                  id="hour"
-                  type="time"
-                  {...register("hour", { required: "Please set the time" })}
-                />
-                {errors.hour && (
-                  <p className="text-red-500 text-sm">{errors.hour.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="consistency">Bristol Stool Scale</Label>
-                <select
-                  id="consistency"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  {...register("consistency", { required: "Please select consistency" })}
-                >
-                  {BRISTOL_SCALE.map((scale) => (
-                    <option key={scale.value} value={scale.value}>
-                      {scale.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.consistency && (
-                  <p className="text-red-500 text-sm">{errors.consistency.message}</p>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="consistency">Bristol Stool Scale</Label>
+                  <select
+                    id="consistency"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register("consistency", { required: "Please select consistency" })}
+                  >
+                    {BRISTOL_SCALE.map((scale) => (
+                      <option key={scale.value} value={scale.value}>
+                        {scale.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.consistency && (
+                    <p className="text-red-500 text-sm">{errors.consistency.message}</p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -397,7 +377,7 @@ export default function HealthPage() {
                                 Bristol Scale Type {entry.consistency}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {format(new Date(entry.hour), "h:mm a")}
+                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
                             </div>
                             {/* Display image if available */}

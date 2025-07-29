@@ -111,13 +111,13 @@ export const macrosRouter = createTRPCRouter({
       z.object({
         description: z.string().min(1),
         imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
-        hour: z.date(),
-        date: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
       })
     )
     .mutation(async ({ ctx, input }) => {
       console.log("Session in macros.create:", ctx.session);
       console.log("User ID:", ctx.session?.user?.id);
+      
       
       if (!ctx.session?.user?.id) {
         throw new TRPCError({
@@ -144,11 +144,11 @@ export const macrosRouter = createTRPCRouter({
           userId,
           description: input.description,
           imageUrl: input.imageUrl,
-          hour: input.hour,
-          date: input.date,
-          calculatedMacros,
+          localDateTime: input.localDateTime,
+          calculatedMacros: calculatedMacros,
         },
       });
+
 
       // Parse the JSON string back to object for the response
       return {
@@ -163,8 +163,7 @@ export const macrosRouter = createTRPCRouter({
         id: z.string(),
         description: z.string().min(1),
         imageUrl: z.string().optional().or(z.null()).transform((val) => val || undefined),
-        hour: z.date(),
-        date: z.date(),
+        localDateTime: z.date(), // Single field for date and time in local timezone
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -209,8 +208,7 @@ export const macrosRouter = createTRPCRouter({
         data: {
           description: input.description,
           imageUrl: input.imageUrl,
-          hour: input.hour,
-          date: input.date,
+          localDateTime: input.localDateTime,
           calculatedMacros,
         },
       });
@@ -271,13 +269,16 @@ export const macrosRouter = createTRPCRouter({
       const entries = await ctx.db.macroEntry.findMany({
         where: {
           userId,
-          date: {
+          localDateTime: {
             gte: startOfDay,
             lte: endOfDay,
           },
         },
-        orderBy: { hour: "asc" },
+        orderBy: {
+          localDateTime: "asc",
+        },
       });
+
 
       // Parse JSON strings back to objects
       return entries.map((entry: any) => ({

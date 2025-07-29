@@ -8,7 +8,7 @@ export const weightRouter = createTRPCRouter({
   upsert: protectedProcedure
     .input(
       z.object({
-        date: z.date(),
+        localDate: z.date(), // Local date without timezone considerations
         weight: z.number().positive().min(20).max(300), // Reasonable weight limits
       })
     )
@@ -22,15 +22,11 @@ export const weightRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
 
-      // Normalize date to start of day to ensure one entry per day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
-
       const weightEntry = await ctx.db.weightEntry.upsert({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
         update: {
@@ -38,7 +34,7 @@ export const weightRouter = createTRPCRouter({
         },
         create: {
           userId,
-          date: normalizedDate,
+          localDate: input.localDate,
           weight: input.weight,
         },
       });
@@ -48,7 +44,7 @@ export const weightRouter = createTRPCRouter({
 
   // Get weight for a specific date
   getByDate: protectedProcedure
-    .input(z.object({ date: z.date() }))
+    .input(z.object({ localDate: z.date() }))
     .query(async ({ ctx, input }) => {
       if (!ctx.session?.user?.id) {
         throw new TRPCError({
@@ -59,15 +55,11 @@ export const weightRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
       
-      // Normalize date to start of day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
-
       const weightEntry = await ctx.db.weightEntry.findUnique({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
       });
@@ -89,7 +81,7 @@ export const weightRouter = createTRPCRouter({
 
       const latestWeight = await ctx.db.weightEntry.findFirst({
         where: { userId },
-        orderBy: { date: "desc" },
+        orderBy: { localDate: "desc" },
       });
 
       return latestWeight;
@@ -97,7 +89,7 @@ export const weightRouter = createTRPCRouter({
 
   // Delete weight entry for a specific date
   delete: protectedProcedure
-    .input(z.object({ date: z.date() }))
+    .input(z.object({ localDate: z.date() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.session?.user?.id) {
         throw new TRPCError({
@@ -107,16 +99,12 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
-      
-      // Normalize date to start of day
-      const normalizedDate = new Date(input.date);
-      normalizedDate.setHours(0, 0, 0, 0);
 
       const deletedEntry = await ctx.db.weightEntry.delete({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
       });
