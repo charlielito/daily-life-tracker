@@ -1,14 +1,16 @@
-// This is your Prisma schema file,
+// This is the new Prisma schema with local time approach
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["local_time"]
 }
 
 model User {
@@ -43,8 +45,10 @@ model User {
   macroEntries      MacroEntry[]
   intestinalEntries IntestinalEntry[]
   weightEntries     WeightEntry[]
-  activityEntries     ActivityEntry[]
+  activityEntries   ActivityEntry[]
+  
   @@map("users")
+  @@schema("local_time")
 }
 
 model MacroEntry {
@@ -52,23 +56,22 @@ model MacroEntry {
   userId           String
   description      String
   imageUrl         String?
-  timestamp        DateTime? // New unified timestamp field (optional during migration)
-  hour             DateTime
-  date             DateTime
+  localDateTime    DateTime // Single field storing user's local date and time
   calculatedMacros String? // JSON stored as string 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  
   @@map("macro_entries")
+  @@schema("local_time")
 }
 
 model WeightEntry {
   id        String   @id @default(cuid())
   userId    String
-  date      DateTime // Date for the weight entry (one per day)
+  localDate DateTime // Local date (normalized to start of day in local time)
   weight    Float    // Weight in kg
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -77,26 +80,26 @@ model WeightEntry {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Ensure one weight entry per user per day
-  @@unique([userId, date])
+  @@unique([userId, localDate])
   @@map("weight_entries")
+  @@schema("local_time")
 }
 
 model IntestinalEntry {
-  id          String   @id @default(cuid())
-  userId      String
-  timestamp   DateTime? // New unified timestamp field (optional during migration)
-  date        DateTime
-  hour        DateTime
-  consistency String // Bristol Stool Scale (1-7)
-  color       String
-  painLevel   Int // 0-10 scale
-  notes       String?
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id            String   @id @default(cuid())
+  userId        String
+  localDateTime DateTime // Single field storing user's local date and time
+  consistency   String // Bristol Stool Scale (1-7)
+  color         String
+  painLevel     Int // 0-10 scale
+  notes         String?
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   @@map("intestinal_entries")
+  @@schema("local_time")
 }
 
 model ActivityEntry {
@@ -108,15 +111,14 @@ model ActivityEntry {
   intensity        String   // "low", "moderate", "high"
   caloriesBurned   Int      // Calories burned (either calculated or user-provided)
   caloriesManuallyEntered  Boolean  @default(false) // True if calories were provided by the user
-  timestamp        DateTime? // New unified timestamp field (optional during migration)
-  date             DateTime // Date of the activity
-  hour             DateTime // Time of the activity
+  localDateTime    DateTime // Single field storing user's local date and time
   notes            String?  // Optional notes
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  
   @@map("activity_entries")
-}
+  @@schema("local_time")
+} 
