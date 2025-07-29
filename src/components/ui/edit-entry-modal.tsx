@@ -49,7 +49,7 @@ export function EditEntryModal({
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<any>();
+  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<any>();
 
   // Reset form when entry changes
   useEffect(() => {
