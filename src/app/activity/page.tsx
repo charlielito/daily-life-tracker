@@ -47,7 +47,7 @@ export default function ActivityPage() {
     defaultValues: {
       localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       intensity: "moderate",
-      activityType: "Other",
+      activityType: "Weight Training",
     }
   });
 

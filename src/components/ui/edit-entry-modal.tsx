@@ -221,17 +221,19 @@ export function EditEntryModal({
                   <Label htmlFor="painLevel">Pain Level (0-10)</Label>
                   <Input
                     id="painLevel"
-                    type="number"
+                    type="range"
                     min="0"
                     max="10"
-                    {...register("painLevel", { 
-                      required: "Please rate pain level",
-                      min: { value: 0, message: "Pain level must be at least 0" },
-                      max: { value: 10, message: "Pain level must be at most 10" }
-                    })}
+                    {...register("painLevel", { valueAsNumber: true })}
+                    className="w-full"
                   />
-                  {errors.painLevel && (
-                    <p className="text-red-500 text-sm">{(errors.painLevel as any)?.message}</p>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>0 - No pain</span>
+                    <span className="font-medium text-gray-700">Current: {watch("painLevel")}</span>
+                    <span>10 - Severe pain</span>
+                  </div>
+                  {(errors as any).painLevel && (
+                    <p className="text-red-500 text-sm">{(errors as any).painLevel.message}</p>
                   )}
                 </div>
 

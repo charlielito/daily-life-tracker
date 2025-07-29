@@ -55,7 +55,7 @@ export function ActivityEditModal({
         activityType: entry.activityType || "",
         description: entry.description || "",
         duration: entry.duration?.toString() || "",
-        intensity: entry.intensity || "moderate",
+        intensity: entry.intensity || "",
         localDateTime: formattedTimestamp,
         notes: entry.notes || "",
         caloriesBurned: entry.caloriesBurned?.toString() || "",

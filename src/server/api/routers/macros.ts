@@ -139,9 +139,6 @@ export const macrosRouter = createTRPCRouter({
         await incrementAiUsage(userId, ctx.db);
       }
 
-      // DEBUG: Log before database insert
-      console.log("🍎 [DEBUG] Macros create - About to insert localDateTime:", input.localDateTime.toISOString());
-
       const entry = await ctx.db.macroEntry.create({
         data: {
           userId,
