@@ -9,6 +9,7 @@ import { Textarea } from "./textarea";
 import { ImageUpload } from "./image-upload";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface EditEntryModalProps {
   isOpen: boolean;
@@ -18,24 +19,7 @@ interface EditEntryModalProps {
   entry: any;
   type: "food" | "health";
   isLoading?: boolean;
-  error?: any; // Add error prop
-}
-
-interface FoodFormData {
-  description: string;
-  timestamp: string; // New field for datetime-local input
-  date: string;
-  hour: string;
-}
-
-interface HealthFormData {
-  timestamp: string; // New field for datetime-local input
-  date: string;
-  hour: string;
-  consistency: string;
-  color: string;
-  painLevel: number;
-  notes: string;
+  error?: any;
 }
 
 const BRISTOL_SCALE = [
@@ -60,78 +44,58 @@ export function EditEntryModal({
   entry,
   type,
   isLoading = false,
-  error = null, // Add error prop
+  error
 }: EditEntryModalProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<FoodFormData | HealthFormData>({
-    defaultValues: type === "food" ? {
-      description: entry?.description || "",
-      date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-      hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
-    } : {
-      date: entry?.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-      hour: entry?.hour ? format(new Date(entry.hour), "HH:mm") : "",
-      consistency: entry?.consistency || "4",
-      color: entry?.color || "Brown",
-      painLevel: entry?.painLevel || 0,
-      notes: entry?.notes || "",
-    }
-  });
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<any>();
 
+  // Reset form when entry changes
   useEffect(() => {
     if (isOpen && entry) {
       setUploadedImageUrl(entry.imageUrl);
       
-      // Convert timestamp or hour to datetime-local format
-      const entryTimestamp = entry.timestamp || entry.hour;
-      const formattedTimestamp = entryTimestamp ? format(new Date(entryTimestamp), "yyyy-MM-dd'T'HH:mm") : "";
+      // Convert localDateTime to datetime-local format for display
+      const localDisplayTime = convertUTCToLocalDisplay(entry.localDateTime);
+      const formattedTimestamp = format(localDisplayTime, "yyyy-MM-dd'T'HH:mm");
       
-      reset(type === "food" ? {
-        description: entry.description || "",
-        timestamp: formattedTimestamp,
-        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
-      } : {
-        timestamp: formattedTimestamp,
-        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
-        consistency: entry.consistency || "4",
-        color: entry.color || "Brown",
-        painLevel: entry.painLevel || 0,
-        notes: entry.notes || "",
-      });
+      if (type === "food") {
+        reset({
+          description: entry.description || "",
+          localDateTime: formattedTimestamp,
+        });
+      } else {
+        reset({
+          localDateTime: formattedTimestamp,
+          consistency: entry.consistency || "4",
+          color: entry.color || "Brown",
+          painLevel: entry.painLevel || 0,
+          notes: entry.notes || "",
+        });
+      }
     }
-  }, [isOpen, entry, reset, type]);
+  }, [isOpen, entry, type, reset]);
 
-  const onSubmit = (data: FoodFormData | HealthFormData) => {
-    // Parse the datetime-local input
-    const timestamp = new Date(data.timestamp);
-    const entryDate = new Date(timestamp);
-    entryDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
+  const onSubmit = (data: any) => {
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
 
     if (type === "food") {
-      const foodData = data as FoodFormData;
       onSave({
         id: entry.id,
-        description: foodData.description,
-        timestamp: timestamp, // Use new timestamp field
-        date: entryDate, // Keep for backward compatibility
-        hour: timestamp, // Keep for backward compatibility
+        description: data.description,
+        localDateTime: localDateTime,
         imageUrl: uploadedImageUrl,
       });
     } else {
-      const healthData = data as HealthFormData;
       onSave({
         id: entry.id,
-        timestamp: timestamp, // Use new timestamp field
-        date: entryDate, // Keep for backward compatibility
-        hour: timestamp, // Keep for backward compatibility
-        consistency: healthData.consistency,
-        color: healthData.color,
-        painLevel: healthData.painLevel,
-        notes: healthData.notes,
+        localDateTime: localDateTime,
+        consistency: data.consistency,
+        color: data.color,
+        painLevel: data.painLevel,
+        notes: data.notes,
         imageUrl: uploadedImageUrl,
       });
     }
@@ -179,23 +143,19 @@ export function EditEntryModal({
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
                   {type === "food" ? "When did you eat this?" : "When did this occur?"}
                 </label>
                 <input
-                  {...register("timestamp", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: "Date and time are required" })}
                   type="datetime-local"
-                  id="timestamp"
+                  id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.timestamp && (
-                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                {errors.localDateTime && (
+                  <p className="text-red-500 text-sm mt-1">{(errors.localDateTime as any)?.message}</p>
                 )}
               </div>
-
-              {/* Hidden fields for backward compatibility */}
-              <input type="hidden" {...register("date")} />
-              <input type="hidden" {...register("hour")} />
 
             {type === "food" ? (
               <>
@@ -207,7 +167,7 @@ export function EditEntryModal({
                     {...register("description", { required: "Description is required" })}
                   />
                   {errors.description && (
-                    <p className="text-red-500 text-sm">{errors.description.message}</p>
+                    <p className="text-red-500 text-sm">{(errors.description as any)?.message}</p>
                   )}
                 </div>
 
@@ -235,7 +195,7 @@ export function EditEntryModal({
                     ))}
                   </select>
                   {errors.consistency && (
-                    <p className="text-red-500 text-sm">{errors.consistency.message}</p>
+                    <p className="text-red-500 text-sm">{(errors.consistency as any)?.message}</p>
                   )}
                 </div>
 
@@ -253,7 +213,7 @@ export function EditEntryModal({
                     ))}
                   </select>
                   {errors.color && (
-                    <p className="text-red-500 text-sm">{errors.color.message}</p>
+                    <p className="text-red-500 text-sm">{(errors.color as any)?.message}</p>
                   )}
                 </div>
 
@@ -271,7 +231,7 @@ export function EditEntryModal({
                     })}
                   />
                   {errors.painLevel && (
-                    <p className="text-red-500 text-sm">{errors.painLevel.message}</p>
+                    <p className="text-red-500 text-sm">{(errors.painLevel as any)?.message}</p>
                   )}
                 </div>
 

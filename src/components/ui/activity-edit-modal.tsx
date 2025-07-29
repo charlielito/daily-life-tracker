@@ -9,6 +9,7 @@ import { Textarea } from "./textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface ActivityEditModalProps {
   isOpen: boolean;
@@ -25,9 +26,7 @@ interface ActivityFormData {
   description: string;
   duration: number;
   intensity: "low" | "moderate" | "high";
-  timestamp: string; // New field for datetime-local input
-  date: string;
-  hour: string;
+  localDateTime: string; // Single field for datetime-local input
   notes?: string;
   caloriesBurned?: string;
 }
@@ -48,18 +47,16 @@ export function ActivityEditModal({
   // Reset form when entry changes
   useEffect(() => {
     if (isOpen && entry) {
-      // Convert timestamp or hour to datetime-local format  
-      const entryTimestamp = entry.timestamp || entry.hour;
-      const formattedTimestamp = entryTimestamp ? format(new Date(entryTimestamp), "yyyy-MM-dd'T'HH:mm") : "";
+      // Convert localDateTime to datetime-local format for display
+      const localDisplayTime = convertUTCToLocalDisplay(entry.localDateTime);
+      const formattedTimestamp = format(localDisplayTime, "yyyy-MM-dd'T'HH:mm");
       
       reset({
         activityType: entry.activityType || "",
         description: entry.description || "",
         duration: entry.duration?.toString() || "",
         intensity: entry.intensity || "moderate",
-        timestamp: formattedTimestamp,
-        date: entry.date ? format(new Date(entry.date), "yyyy-MM-dd") : "",
-        hour: entry.hour ? format(new Date(entry.hour), "HH:mm") : "",
+        localDateTime: formattedTimestamp,
         notes: entry.notes || "",
         caloriesBurned: entry.caloriesBurned?.toString() || "",
       });
@@ -67,10 +64,8 @@ export function ActivityEditModal({
   }, [isOpen, entry, reset]);
 
   const onSubmit = (data: any) => {
-    // Parse the datetime-local input
-    const timestamp = new Date(data.timestamp);
-    const entryDate = new Date(timestamp);
-    entryDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
 
     onSave({
       id: entry.id,
@@ -78,9 +73,7 @@ export function ActivityEditModal({
       description: data.description,
       duration: parseInt(data.duration),
       intensity: data.intensity,
-      timestamp: timestamp, // Use new timestamp field
-      date: entryDate, // Keep for backward compatibility
-      hour: timestamp, // Keep for backward compatibility
+      localDateTime: localDateTime, // Use the converted localDateTime
       notes: data.notes,
       caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : undefined,
     });
@@ -113,23 +106,19 @@ export function ActivityEditModal({
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Date and Time */}
               <div>
-                <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
                   When did you do this activity?
                 </label>
                 <input
-                  {...register("timestamp", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: "Date and time are required" })}
                   type="datetime-local"
-                  id="timestamp"
+                  id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.timestamp && (
-                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                {errors.localDateTime && (
+                  <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
                 )}
               </div>
-
-              {/* Hidden fields for backward compatibility */}
-              <input type="hidden" {...register("date")} />
-              <input type="hidden" {...register("hour")} />
 
               {/* Activity Type */}
               <div>
@@ -257,7 +246,7 @@ export function ActivityEditModal({
                   <p className="text-sm font-medium">{entry.activityType}</p>
                   <p className="text-sm text-gray-600">{entry.description}</p>
                   <p className="text-xs text-gray-500">
-                    {format(new Date(entry.timestamp || entry.hour), "MMM d, h:mm a")} • {entry.duration} minutes
+                    {format(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a")} • {entry.duration} minutes
                   </p>
                 </div>
               </div>

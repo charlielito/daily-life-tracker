@@ -14,15 +14,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Activity, Edit, Trash2, Clock, Flame } from "lucide-react";
 import { ActivityEditModal } from "@/components/ui/activity-edit-modal";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface ActivityFormData {
   activityType: string;
   description: string;
   duration: string;
   intensity: "low" | "moderate" | "high";
-  timestamp: string; // New field for datetime-local input
-  date: string;
-  hour: string;
+  localDateTime: string; // Single field for datetime-local input
   notes?: string;
   caloriesBurned?: string;
 }
@@ -46,16 +45,14 @@ export default function ActivityPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<ActivityFormData>({
     defaultValues: {
-      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
-      date: format(new Date(), "yyyy-MM-dd"),
-      hour: format(new Date(), "HH:mm"),
+      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       intensity: "moderate",
-      caloriesBurned: "",
+      activityType: "Other",
     }
   });
 
   // Watch the timestamp field to update selectedDate when it changes
-  const watchedTimestamp = watch("timestamp");
+  const watchedTimestamp = watch("localDateTime");
   useEffect(() => {
     if (watchedTimestamp) {
       const timestampDate = new Date(watchedTimestamp);
@@ -78,9 +75,7 @@ export default function ActivityPage() {
         description: "",
         duration: "",
         intensity: "moderate",
-        timestamp: format(selectedDate, "yyyy-MM-dd'T'HH:mm"), // Reset timestamp to current date
-        date: format(selectedDate, "yyyy-MM-dd"),
-        hour: format(new Date(), "HH:mm"),
+        localDateTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"), // Reset timestamp to current date
         notes: "",
         caloriesBurned: "",
       });
@@ -129,20 +124,15 @@ export default function ActivityPage() {
   );
 
   const onSubmit = (data: ActivityFormData) => {
-    // Parse the datetime-local input
-    const timestamp = new Date(data.timestamp);
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
     
-    const activityDate = new Date(timestamp);
-    activityDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
-
     createActivityEntry.mutate({
       activityType: data.activityType,
       description: data.description,
       duration: parseInt(data.duration),
       intensity: data.intensity,
-      timestamp: timestamp, // Use the new timestamp field
-      date: activityDate, // Keep for backward compatibility
-      hour: timestamp, // Keep for backward compatibility
+      localDateTime: localDateTime, // Use the converted timestamp
       notes: data.notes,
       caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : undefined,
     });
@@ -266,30 +256,27 @@ export default function ActivityPage() {
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="timestamp">Date and Time</Label>
-                  <Input
-                    type="datetime-local"
-                    {...register("timestamp", { required: "Date and time are required" })}
-                  />
-                  {errors.timestamp && (
-                    <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
-                  )}
-                </div>
-                <div>
-                  {/* Empty div to maintain grid layout */}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="localDateTime">Date and Time</Label>
+                <Input
+                  {...register("localDateTime", { required: "Date and time are required" })}
+                  type="datetime-local"
+                  id="localDateTime"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.localDateTime && (
+                  <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
+                )}
+                <p className="text-xs text-gray-500">
+                  You can log activities for any date and time, not just today
+                </p>
               </div>
-
-              {/* Hidden fields for backward compatibility */}
-              <input type="hidden" {...register("date")} />
-              <input type="hidden" {...register("hour")} />
 
               {/* Activity Type */}
               <div>
                 <Label htmlFor="activityType">Activity Type</Label>
                 <select
+                  id="activityType"
                   {...register("activityType", { required: "Activity type is required" })}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
@@ -309,6 +296,7 @@ export default function ActivityPage() {
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
+                  id="description"
                   placeholder="e.g., Morning run around the park"
                   {...register("description", { required: "Description is required" })}
                 />
@@ -322,6 +310,7 @@ export default function ActivityPage() {
                 <div>
                   <Label htmlFor="duration">Duration (minutes)</Label>
                   <Input
+                    id="duration"
                     type="number"
                     min="1"
                     placeholder="30"
@@ -337,6 +326,7 @@ export default function ActivityPage() {
                 <div>
                   <Label htmlFor="intensity">Intensity</Label>
                   <select
+                    id="intensity"
                     {...register("intensity", { required: "Intensity is required" })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
@@ -355,6 +345,7 @@ export default function ActivityPage() {
               <div>
                 <Label htmlFor="notes">Notes (optional)</Label>
                 <Textarea
+                  id="notes"
                   placeholder="Any additional notes about your activity..."
                   {...register("notes")}
                 />
@@ -364,6 +355,7 @@ export default function ActivityPage() {
               <div>
                 <Label htmlFor="caloriesBurned">Calories Burned (optional)</Label>
                 <Input
+                  id="caloriesBurned"
                   type="number"
                   min="1"
                   placeholder="e.g., 300"
@@ -450,7 +442,7 @@ export default function ActivityPage() {
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
+                              {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                             </span>
                             <span>{entry.duration} min</span>
                             <span className="flex items-center gap-1">

@@ -15,12 +15,11 @@ import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
 import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface FoodFormData {
   description: string;
-  date: string;
-  hour: string;
-  timestamp: string; // New field for datetime-local input
+  localDateTime: string; // Single field for datetime-local input
 }
 
 export default function FoodPage() {
@@ -43,14 +42,12 @@ export default function FoodPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<FoodFormData>({
     defaultValues: {
-      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
-      date: format(new Date(), "yyyy-MM-dd"),
-      hour: format(new Date(), "HH:mm"),
+      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
     }
   });
 
   // Watch the timestamp field to update selectedDate when it changes
-  const watchedTimestamp = watch("timestamp");
+  const watchedTimestamp = watch("localDateTime");
   useEffect(() => {
     if (watchedTimestamp) {
       const timestampDate = new Date(watchedTimestamp);
@@ -64,9 +61,7 @@ export default function FoodPage() {
     onSuccess: () => {
       reset({
         description: "",
-        timestamp: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
-        date: format(selectedDate, "yyyy-MM-dd"),
-        hour: format(new Date(), "HH:mm"),
+        localDateTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
       });
       setUploadedImageUrl(undefined); // Clear the uploaded image
       utils.macros.getToday.invalidate();
@@ -105,19 +100,14 @@ export default function FoodPage() {
     { enabled: !!session }
   );
 
+
   const onSubmit = (data: FoodFormData) => {
-    // Parse the datetime-local input
-    const timestamp = new Date(data.timestamp);
-    
-    // Create dates in local timezone to avoid timezone shifts
-    const mealDate = new Date(timestamp);
-    mealDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
     
     createMacroEntry.mutate({
       description: data.description,
-      timestamp: timestamp, // Use the new timestamp field
-      hour: timestamp, // Keep for backward compatibility
-      date: mealDate, // Keep for backward compatibility
+      localDateTime: localDateTime, // Use the converted date
       imageUrl: uploadedImageUrl,
     });
   };
@@ -220,24 +210,20 @@ export default function FoodPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="localDateTime">Date and Time</Label>
                 <Input
-                  {...register("timestamp", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: "Date and time are required" })}
                   type="datetime-local"
-                  id="timestamp"
+                  id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.timestamp && (
-                  <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                {errors.localDateTime && (
+                  <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  You can log meals for any date, not just today
+                  You can log meals for any date and time, not just today
                 </p>
               </div>
-
-              {/* Hidden fields for backward compatibility */}
-              <input type="hidden" {...register("date")} />
-              <input type="hidden" {...register("hour")} />
 
               <div className="space-y-2">
                 <Label htmlFor="description">Meal Description</Label>
@@ -326,7 +312,7 @@ export default function FoodPage() {
                             <div className="flex-1">
                               <p className="font-medium">{entry.description}</p>
                               <p className="text-sm text-gray-500">
-                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
+                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
                             </div>
                             {/* Display image if available */}

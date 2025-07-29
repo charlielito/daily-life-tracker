@@ -13,13 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit } from "lucide-react";
 import Image from "next/image";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 
 interface HealthFormData {
-  timestamp: string;
-  date: string;
-  hour: string;
+  localDateTime: string; // Single field for datetime-local input
   consistency: string;
   color: string;
   painLevel: number;
@@ -60,9 +59,7 @@ export default function HealthPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<HealthFormData>({
     defaultValues: {
-      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
-      date: format(new Date(), "yyyy-MM-dd"),
-      hour: format(new Date(), "HH:mm"),
+      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
       consistency: "4",
       color: "Brown",
       painLevel: 0,
@@ -70,7 +67,7 @@ export default function HealthPage() {
   });
 
   // Watch the timestamp field to update selectedDate when it changes
-  const watchedTimestamp = watch("timestamp");
+  const watchedTimestamp = watch("localDateTime");
   useEffect(() => {
     if (watchedTimestamp) {
       const timestampDate = new Date(watchedTimestamp);
@@ -83,9 +80,7 @@ export default function HealthPage() {
   const createHealthEntry = api.intestinal.create.useMutation({
     onSuccess: () => {
       reset({
-        timestamp: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
-        date: format(selectedDate, "yyyy-MM-dd"),
-        hour: format(new Date(), "HH:mm"),
+        localDateTime: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
         consistency: "4",
         color: "Brown",
         painLevel: 0,
@@ -129,17 +124,11 @@ export default function HealthPage() {
   );
 
   const onSubmit = (data: HealthFormData) => {
-    // Parse the datetime-local input
-    const timestamp = new Date(data.timestamp);
+    // Convert local time to UTC for storage using shared utility
+    const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
     
-    // Create dates in local timezone to avoid timezone shifts
-    const entryDate = new Date(timestamp);
-    entryDate.setHours(0, 0, 0, 0); // Reset to start of day for date field
-
     createHealthEntry.mutate({
-      timestamp: timestamp, // Use the new timestamp field
-      date: entryDate, // Keep for backward compatibility
-      hour: timestamp, // Keep for backward compatibility
+      localDateTime: localDateTime, // Use the converted timestamp
       consistency: data.consistency,
       color: data.color,
       painLevel: data.painLevel,
@@ -234,23 +223,19 @@ export default function HealthPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
                     When did this occur?
                   </label>
                   <input
-                    {...register("timestamp", { required: "Date and time are required" })}
+                    {...register("localDateTime", { required: "Date and time are required" })}
                     type="datetime-local"
-                    id="timestamp"
+                    id="localDateTime"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  {errors.timestamp && (
-                    <p className="text-red-500 text-sm mt-1">{errors.timestamp.message}</p>
+                  {errors.localDateTime && (
+                    <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
                   )}
                 </div>
-
-                {/* Hidden fields for backward compatibility */}
-                <input type="hidden" {...register("date")} />
-                <input type="hidden" {...register("hour")} />
 
                 <div className="space-y-2">
                   <Label htmlFor="consistency">Bristol Stool Scale</Label>
@@ -392,7 +377,7 @@ export default function HealthPage() {
                                 Bristol Scale Type {entry.consistency}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
+                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
                             </div>
                             {/* Display image if available */}

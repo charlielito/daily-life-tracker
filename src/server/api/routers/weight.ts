@@ -3,23 +3,12 @@ import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
-/**
- * Normalize a date to UTC midnight (00:00:00.000Z) to ensure consistent date handling
- * regardless of timezone differences between frontend and backend
- */
-function normalizeToUTCMidnight(date: Date): Date {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-}
-
 export const weightRouter = createTRPCRouter({
   // Create or update weight for a specific date
   upsert: protectedProcedure
     .input(
       z.object({
-        date: z.date(),
+        localDate: z.date(), // Local date without timezone considerations
         weight: z.number().positive().min(20).max(300), // Reasonable weight limits
       })
     )
@@ -32,16 +21,14 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
-      const normalizedDate = normalizeToUTCMidnight(input.date);
 
-      console.log("⚖️ [DEBUG] Weight upsert - Input date:", input.date.toISOString());
-      console.log("⚖️ [DEBUG] Weight upsert - Normalized date:", normalizedDate.toISOString());
+      console.log("⚖️ [DEBUG] Weight upsert - Input localDate:", input.localDate.toISOString());
 
       const weightEntry = await ctx.db.weightEntry.upsert({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
         update: {
@@ -49,7 +36,7 @@ export const weightRouter = createTRPCRouter({
         },
         create: {
           userId,
-          date: normalizedDate,
+          localDate: input.localDate,
           weight: input.weight,
         },
       });
@@ -59,7 +46,7 @@ export const weightRouter = createTRPCRouter({
 
   // Get weight for a specific date
   getByDate: protectedProcedure
-    .input(z.object({ date: z.date() }))
+    .input(z.object({ localDate: z.date() }))
     .query(async ({ ctx, input }) => {
       if (!ctx.session?.user?.id) {
         throw new TRPCError({
@@ -69,18 +56,15 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
-      const normalizedDate = normalizeToUTCMidnight(input.date);
       
-      console.log("⚖️ [DEBUG] Weight getByDate - Input date:", input.date);
-      console.log("⚖️ [DEBUG] Weight getByDate - Input date ISO:", input.date.toISOString());
-      console.log("⚖️ [DEBUG] Weight getByDate - Normalized date:", normalizedDate);
-      console.log("⚖️ [DEBUG] Weight getByDate - Normalized date ISO:", normalizedDate.toISOString());
+      console.log("⚖️ [DEBUG] Weight getByDate - Input localDate:", input.localDate);
+      console.log("⚖️ [DEBUG] Weight getByDate - Input localDate ISO:", input.localDate.toISOString());
 
       const weightEntry = await ctx.db.weightEntry.findUnique({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
       });
@@ -102,7 +86,7 @@ export const weightRouter = createTRPCRouter({
 
       const latestWeight = await ctx.db.weightEntry.findFirst({
         where: { userId },
-        orderBy: { date: "desc" },
+        orderBy: { localDate: "desc" },
       });
 
       return latestWeight;
@@ -110,7 +94,7 @@ export const weightRouter = createTRPCRouter({
 
   // Delete weight entry for a specific date
   delete: protectedProcedure
-    .input(z.object({ date: z.date() }))
+    .input(z.object({ localDate: z.date() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.session?.user?.id) {
         throw new TRPCError({
@@ -120,13 +104,12 @@ export const weightRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
-      const normalizedDate = normalizeToUTCMidnight(input.date);
 
       const deletedEntry = await ctx.db.weightEntry.delete({
         where: {
-          userId_date: {
+          userId_localDate: {
             userId,
-            date: normalizedDate,
+            localDate: input.localDate,
           },
         },
       });

@@ -14,6 +14,7 @@ import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { format } from "date-fns";
 import Image from "next/image";
 import { AlertTriangle, Crown, Zap, Flame, User } from "lucide-react";
+import { convertUTCToLocalDisplay } from "@/utils/dateUtils";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -22,8 +23,12 @@ export default function DashboardPage() {
   // Ensure today is properly normalized to start of day in local timezone
   const [today] = useState(() => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return now;
+    // Create a date that represents today in local time, normalized to start of day
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    console.log("🗓️ [DEBUG] Dashboard today date:", todayLocal);
+    console.log("🗓️ [DEBUG] Dashboard today ISO:", todayLocal.toISOString());
+    console.log("🗓️ [DEBUG] Dashboard today getTime:", todayLocal.getTime());
+    return todayLocal;
   });
   
   const [showWeightPrompt, setShowWeightPrompt] = useState(false);
@@ -74,7 +79,7 @@ export default function DashboardPage() {
 
   // Fetch today's weight
   const { data: todayWeight, isLoading: weightLoading } = api.weight.getByDate.useQuery(
-    { date: today },
+    { localDate: today },
     { enabled: !!session }
   );
 
@@ -83,6 +88,22 @@ export default function DashboardPage() {
     undefined,
     { enabled: !!session && !todayWeight }
   );
+
+  // Debug logs for weight queries
+  useEffect(() => {
+    if (session && !weightLoading) {
+      console.log("⚖️ [DEBUG] Dashboard todayWeight result:", todayWeight);
+      console.log("⚖️ [DEBUG] Dashboard latestWeight result:", latestWeight);
+      if (todayWeight) {
+        console.log("⚖️ [DEBUG] Dashboard todayWeight localDate:", todayWeight.localDate);
+        console.log("⚖️ [DEBUG] Dashboard todayWeight localDate ISO:", todayWeight.localDate.toISOString());
+      }
+      if (latestWeight) {
+        console.log("⚖️ [DEBUG] Dashboard latestWeight localDate:", latestWeight.localDate);
+        console.log("⚖️ [DEBUG] Dashboard latestWeight localDate ISO:", latestWeight.localDate.toISOString());
+      }
+    }
+  }, [session, weightLoading, todayWeight, latestWeight]);
 
   const utils = api.useContext();
 
@@ -101,9 +122,16 @@ export default function DashboardPage() {
   // Check if we should show weight prompt (only for today, and only if no weight exists)
   useEffect(() => {
     const currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
+    const todayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
     
-    if (session && !weightLoading && !todayWeight && today.getTime() === currentDate.getTime()) {
+    console.log("⚖️ [DEBUG] Weight prompt check - today state:", today);
+    console.log("⚖️ [DEBUG] Weight prompt check - currentDate:", currentDate);
+    console.log("⚖️ [DEBUG] Weight prompt check - todayLocal:", todayLocal);
+    console.log("⚖️ [DEBUG] Weight prompt check - todayWeight:", todayWeight);
+    console.log("⚖️ [DEBUG] Weight prompt check - weightLoading:", weightLoading);
+    
+    if (session && !weightLoading && !todayWeight && today.getTime() === todayLocal.getTime()) {
+      console.log("⚖️ [DEBUG] Weight prompt - Showing prompt");
       // Show prompt after a short delay to let the dashboard load first
       const timer = setTimeout(() => setShowWeightPrompt(true), 1000);
       return () => clearTimeout(timer);
@@ -112,7 +140,7 @@ export default function DashboardPage() {
 
   const handleSaveWeight = (weight: number) => {
     upsertWeight.mutate({
-      date: today,
+      localDate: today,
       weight,
     });
   };
@@ -203,6 +231,12 @@ export default function DashboardPage() {
   // Display weight (today's weight or latest weight)
   const displayWeight = todayWeight?.weight || latestWeight?.weight;
   const isLatestWeight = !todayWeight && latestWeight;
+
+  // Debug logs for weight display
+  console.log("⚖️ [DEBUG] Dashboard displayWeight:", displayWeight);
+  console.log("⚖️ [DEBUG] Dashboard isLatestWeight:", isLatestWeight);
+  console.log("⚖️ [DEBUG] Dashboard todayWeight exists:", !!todayWeight);
+  console.log("⚖️ [DEBUG] Dashboard latestWeight exists:", !!latestWeight);
 
   // Usage warnings
   const isUnlimited = subscriptionStatus?.hasUnlimitedAccess;
@@ -486,7 +520,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-orange-600 mt-1">
                 {isLatestWeight 
-                  ? `from ${format(new Date(latestWeight!.date), "MMM d")}`
+                  ? `from ${format(new Date(latestWeight!.localDate), "MMM d")}`
                   : todayWeight 
                     ? "today's weight"
                     : "no data"
@@ -550,7 +584,7 @@ export default function DashboardPage() {
               {todayIntestinal.length > 0 && (
                 <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                   <p className="font-medium">Latest Entry:</p>
-                  <p>{format(new Date(todayIntestinal[todayIntestinal.length - 1].timestamp || todayIntestinal[todayIntestinal.length - 1].hour), "h:mm a")} • Pain: {todayIntestinal[todayIntestinal.length - 1].painLevel}/10</p>
+                  <p>{format(convertUTCToLocalDisplay(todayIntestinal[todayIntestinal.length - 1].localDateTime), "h:mm a")} • Pain: {todayIntestinal[todayIntestinal.length - 1].painLevel}/10</p>
                 </div>
               )}
             </CardContent>
@@ -614,7 +648,7 @@ export default function DashboardPage() {
                             <div className="flex-1">
                               <p className="font-medium text-sm">{entry.description}</p>
                               <p className="text-xs text-gray-500">
-                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
+                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
                             </div>
                             {/* Small image thumbnail */}
@@ -702,7 +736,7 @@ export default function DashboardPage() {
                             <div className="flex-1">
                               <p className="font-medium text-sm">Bristol Scale Type {entry.consistency}</p>
                               <p className="text-xs text-gray-500">
-                                {format(new Date(entry.timestamp || entry.hour), "h:mm a")}
+                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
                             </div>
                             {/* Small image thumbnail */}
