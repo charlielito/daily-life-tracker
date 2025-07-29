@@ -22,8 +22,6 @@ export const weightRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
 
-      console.log("⚖️ [DEBUG] Weight upsert - Input localDate:", input.localDate.toISOString());
-
       const weightEntry = await ctx.db.weightEntry.upsert({
         where: {
           userId_localDate: {
@@ -57,9 +55,6 @@ export const weightRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
       
-      console.log("⚖️ [DEBUG] Weight getByDate - Input localDate:", input.localDate);
-      console.log("⚖️ [DEBUG] Weight getByDate - Input localDate ISO:", input.localDate.toISOString());
-
       const weightEntry = await ctx.db.weightEntry.findUnique({
         where: {
           userId_localDate: {
