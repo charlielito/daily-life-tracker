@@ -113,10 +113,11 @@ export default function DashboardPage() {
     }
   }, [session, weightLoading, todayWeight, today]);
 
-  const handleSaveWeight = (weight: number) => {
+  const handleSaveWeight = (weight: number, imageUrl?: string) => {
     upsertWeight.mutate({
       localDate: convertLocalToUTCForStorage(today),
       weight,
+      imageUrl,
     });
   };
 
@@ -495,16 +496,27 @@ export default function DashboardPage() {
                     : "no data"
                 }
               </p>
-              {!todayWeight && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowWeightPrompt(true)}
-                  className="mt-1 h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
-                >
-                  Add today's weight
-                </Button>
-              )}
+              <div className="flex gap-2 mt-2">
+                {!todayWeight && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowWeightPrompt(true)}
+                    className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
+                  >
+                    Add today's weight
+                  </Button>
+                )}
+                <Link href="/weight">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
+                  >
+                    View All Entries
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

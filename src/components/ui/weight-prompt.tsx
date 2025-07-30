@@ -5,12 +5,13 @@ import { useForm } from "react-hook-form";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
+import { ImageUpload } from "./image-upload";
 import { X, Scale } from "lucide-react";
 
 interface WeightPromptProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (weight: number) => void;
+  onSave: (weight: number, imageUrl?: string) => void;
   isLoading?: boolean;
   date: Date;
 }
@@ -26,14 +27,24 @@ export function WeightPrompt({
   isLoading = false,
   date,
 }: WeightPromptProps) {
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<WeightFormData>();
 
   const onSubmit = (data: WeightFormData) => {
     const weight = parseFloat(data.weight);
     if (!isNaN(weight) && weight > 0) {
-      onSave(weight);
+      onSave(weight, uploadedImageUrl);
       reset();
+      setUploadedImageUrl(undefined);
     }
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setUploadedImageUrl(imageUrl);
+  };
+
+  const handleImageRemove = () => {
+    setUploadedImageUrl(undefined);
   };
 
   if (!isOpen) return null;
@@ -89,6 +100,15 @@ export function WeightPrompt({
               <p className="text-red-500 text-sm">{errors.weight.message}</p>
             )}
           </div>
+
+          {/* Image Upload */}
+          <ImageUpload
+            onImageUpload={handleImageUpload}
+            onImageRemove={handleImageRemove}
+            currentImage={uploadedImageUrl}
+            label="Weight Photo (Optional)"
+            disabled={isLoading}
+          />
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
