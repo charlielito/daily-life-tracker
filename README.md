@@ -37,6 +37,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 
 ### MacroEntry
 - id, user_id, description, image_url?, hour, date, calculated_macros (JSON), created_at, updated_at
+- **calculated_macros includes**: calories, protein, carbs, fat, water (in ml)
 
 ### IntestinalEntry
 - id, user_id, date, hour, consistency, color, pain_level, notes?, image_url?, created_at, updated_at
@@ -107,6 +108,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Monthly weight entries view with calendar layout**
 - [x] ✅ **Image preview modal for weight photos**
 - [x] ✅ **Month/year selector for quick navigation**
+- [x] ✅ **Water consumption tracking in macro calculations**
 
 ### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
@@ -293,10 +295,11 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 3. **Usage Check**: System verifies AI calculation limit (new!)
 4. Enters meal description and time, optionally adds photo
 5. AI calculates macros automatically using Google Gemini (enhanced with image analysis)
-6. **Usage Increment**: System tracks AI usage for billing (new!)
-7. User can edit/delete entries with full form modal
-8. User can view daily summary with macro totals
-9. Recent meals shown with calculated nutrition info and thumbnails
+6. **Water Calculation**: AI estimates water content in milliliters from food/drinks
+7. **Usage Increment**: System tracks AI usage for billing (new!)
+8. User can edit/delete entries with full form modal
+9. User can view daily summary with macro totals including water intake
+10. Recent meals shown with calculated nutrition info, water content, and thumbnails
 
 ### Intestinal Health Flow
 1. Navigate to "Health Monitoring" from dashboard or `/health`
@@ -308,7 +311,7 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 7. Track patterns and individual entries with visual indicators
 
 ### Dashboard Overview
-- **Daily stats**: calories consumed, meals logged, health entries, current weight
+- **Daily stats**: calories consumed, water intake, meals logged, health entries, current weight
 - **Subscription Badge**: Shows current plan (Free/Premium) (new!)
 - **Usage Warnings**: Progress bars and warnings for limits (new!)
 - **Upgrade Prompts**: Smart contextual upgrade suggestions (new!)
@@ -316,7 +319,7 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 - **Weight entries link**: "View All Entries" button for comprehensive weight history
 - **Quick action buttons** for adding new entries
 - **Recent activity** from both food and health tracking with image thumbnails
-- **Enhanced macro display** showing all macronutrients in recent meals
+- **Enhanced macro display** showing all macronutrients and water content in recent meals
 - **Personalized welcome** with today's date
 
 ## 🔒 Security Considerations
@@ -374,6 +377,7 @@ The app is fully functional with:
 - ✅ **Admin panel for user management**
 - ✅ Working dashboard with daily overview and weight tracking
 - ✅ Food tracking with AI-powered macro calculation and image analysis
+- ✅ **Water consumption tracking in macro calculations**
 - ✅ Health monitoring with Bristol Stool Scale and photo documentation
 - ✅ Image upload for both food and health entries (file system + camera)
 - ✅ Enhanced AI macro calculation using food images
@@ -399,15 +403,16 @@ The app is fully functional with:
 6. **Navigate weight data** with month/year selector for any period
 7. **Preview weight photos** in full-size modal by clicking images
 8. **Edit weight entries** with full CRUD operations
-9. **Track meals** with AI-powered macro calculation
+9. **Track meals** with AI-powered macro calculation including water content
 10. **Upload food photos** from device or camera for better macro accuracy
-11. **Monitor usage** on the subscription page
-12. **Upgrade to premium** for unlimited access
-13. **Edit/delete any entry** with full-featured modal forms
-14. **Monitor health** using medical-grade Bristol Stool Scale
-15. **Add health photos** for comprehensive documentation
-16. **View daily summaries** on the dashboard with complete macro breakdowns
-17. **Experience seamless UX** with usage warnings and upgrade prompts
+11. **Monitor water intake** from food and beverages automatically calculated
+12. **Monitor usage** on the subscription page
+13. **Upgrade to premium** for unlimited access
+14. **Edit/delete any entry** with full-featured modal forms
+15. **Monitor health** using medical-grade Bristol Stool Scale
+16. **Add health photos** for comprehensive documentation
+17. **View daily summaries** on the dashboard with complete macro breakdowns
+18. **Experience seamless UX** with usage warnings and upgrade prompts
 
 ### Admin Features:
 - **Grant unlimited access** to friends/team members at `/admin`

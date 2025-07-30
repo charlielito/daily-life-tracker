@@ -72,8 +72,10 @@ async function calculateMacros(description: string, imageUrl?: string): Promise<
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     let prompt = `Please analyze this food description and provide macronutrient information in JSON format: "${description}". 
-    Return only a JSON object with: {"calories": number, "protein": number, "carbs": number, "fat": number}. 
-    Estimate reasonable values based on typical portions.`;
+    Return only a JSON object with: {"calories": number, "protein": number, "carbs": number, "fat": number, "water": number}. 
+    Estimate reasonable values based on typical portions. 
+    For water content, estimate the water content in milliliters (ml) that would be consumed from this food/drink. 
+    Consider both the natural water content of foods and any beverages included.`;
 
     if (imageUrl) {
       prompt += ` 
@@ -83,6 +85,7 @@ IMPORTANT: An image of the food is also provided. Please use both the descriptio
 - Identify ingredients that might not be mentioned in the description
 - Adjust calculations based on visual cooking methods (fried vs grilled, etc.)
 - Consider any sides, sauces, or garnishes visible in the image
+- Estimate water content more accurately based on visible ingredients and portion sizes
 
 Analyze the image at: ${imageUrl}`;
     }

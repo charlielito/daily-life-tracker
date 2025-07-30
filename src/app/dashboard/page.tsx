@@ -198,10 +198,11 @@ export default function DashboardPage() {
         acc.protein += entry.calculatedMacros.protein || 0;
         acc.carbs += entry.calculatedMacros.carbs || 0;
         acc.fat += entry.calculatedMacros.fat || 0;
+        acc.water += entry.calculatedMacros.water || 0;
       }
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 }
   );
 
   // Display weight (today's weight or latest weight)
@@ -450,6 +451,16 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-cyan-700">Water Intake</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-cyan-800">{Math.round(totalMacros.water)}</div>
+              <p className="text-xs text-cyan-600 mt-1">ml from food</p>
+            </CardContent>
+          </Card>
+
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-green-700">Meals Logged</CardTitle>
@@ -646,7 +657,7 @@ export default function DashboardPage() {
                           </div>
                           {/* Macros display */}
                           {entry.calculatedMacros ? (
-                            <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
+                            <div className="grid grid-cols-5 gap-1 mt-2 text-xs">
                               <div className="text-center bg-blue-50 px-1 py-1 rounded">
                                 <div className="font-medium text-blue-700">
                                   {Math.round(entry.calculatedMacros.calories)}
@@ -670,6 +681,12 @@ export default function DashboardPage() {
                                   {Math.round(entry.calculatedMacros.fat)}g
                                 </div>
                                 <div className="text-[10px] text-red-600">fat</div>
+                              </div>
+                              <div className="text-center bg-cyan-50 px-1 py-1 rounded">
+                                <div className="font-medium text-cyan-700">
+                                  {Math.round(entry.calculatedMacros.water || 0)}ml
+                                </div>
+                                <div className="text-[10px] text-cyan-600">water</div>
                               </div>
                             </div>
                           ) : (
