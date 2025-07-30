@@ -132,9 +132,9 @@ export const intestinalRouter = createTRPCRouter({
 
       const userId = ctx.session.user.id;
       const startOfDay = new Date(input.date);
-      startOfDay.setHours(0, 0, 0, 0);
+      startOfDay.setUTCHours(0, 0, 0, 0);
       const endOfDay = new Date(input.date);
-      endOfDay.setHours(23, 59, 59, 999);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
       return ctx.db.intestinalEntry.findMany({
         where: {

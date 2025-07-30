@@ -37,12 +37,14 @@ A modern web application for tracking daily health metrics including nutrition, 
 
 ### MacroEntry
 - id, user_id, description, image_url?, hour, date, calculated_macros (JSON), created_at, updated_at
+- **calculated_macros includes**: calories, protein, carbs, fat, water (in ml)
 
 ### IntestinalEntry
 - id, user_id, date, hour, consistency, color, pain_level, notes?, image_url?, created_at, updated_at
 
 ### WeightEntry
 - id, user_id, date, weight, created_at, updated_at
+- **New**: image_url (optional image for weight entries)
 - **Unique constraint**: One weight entry per user per day
 
 ## 💳 Subscription System
@@ -102,6 +104,11 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Smart usage limiting for AI and uploads**
 - [x] ✅ **Smart calorie balance tracking**
 - [x] ✅ **Physical activity tracking**
+- [x] ✅ **Enhanced weight tracking with image uploads**
+- [x] ✅ **Monthly weight entries view with calendar layout**
+- [x] ✅ **Image preview modal for weight photos**
+- [x] ✅ **Month/year selector for quick navigation**
+- [x] ✅ **Water consumption tracking in macro calculations**
 
 ### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
@@ -275,6 +282,12 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 2. **Smart Display**: Shows today's weight or latest weight with date
 3. **Easy Access**: "Add today's weight" button always available
 4. **One Per Day**: Database constraint ensures single weight per date
+5. **Image Upload**: Optional photo upload for weight documentation
+6. **Monthly View**: Access comprehensive weight history at `/weight`
+7. **Calendar Layout**: Visual monthly calendar showing all weight entries
+8. **Image Preview**: Click any weight photo to view full-size
+9. **Quick Navigation**: Month/year selector for jumping to any period
+10. **Edit/Delete**: Full CRUD operations for all weight entries
 
 ### Macro Tracking Flow
 1. User logs in → redirected to dashboard
@@ -282,10 +295,11 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 3. **Usage Check**: System verifies AI calculation limit (new!)
 4. Enters meal description and time, optionally adds photo
 5. AI calculates macros automatically using Google Gemini (enhanced with image analysis)
-6. **Usage Increment**: System tracks AI usage for billing (new!)
-7. User can edit/delete entries with full form modal
-8. User can view daily summary with macro totals
-9. Recent meals shown with calculated nutrition info and thumbnails
+6. **Water Calculation**: AI estimates water content in milliliters from food/drinks
+7. **Usage Increment**: System tracks AI usage for billing (new!)
+8. User can edit/delete entries with full form modal
+9. User can view daily summary with macro totals including water intake
+10. Recent meals shown with calculated nutrition info, water content, and thumbnails
 
 ### Intestinal Health Flow
 1. Navigate to "Health Monitoring" from dashboard or `/health`
@@ -297,14 +311,15 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 7. Track patterns and individual entries with visual indicators
 
 ### Dashboard Overview
-- **Daily stats**: calories consumed, meals logged, health entries, current weight
+- **Daily stats**: calories consumed, water intake, meals logged, health entries, current weight
 - **Subscription Badge**: Shows current plan (Free/Premium) (new!)
 - **Usage Warnings**: Progress bars and warnings for limits (new!)
 - **Upgrade Prompts**: Smart contextual upgrade suggestions (new!)
 - **Weight management**: Smart weight display with prompts for missing data
+- **Weight entries link**: "View All Entries" button for comprehensive weight history
 - **Quick action buttons** for adding new entries
 - **Recent activity** from both food and health tracking with image thumbnails
-- **Enhanced macro display** showing all macronutrients in recent meals
+- **Enhanced macro display** showing all macronutrients and water content in recent meals
 - **Personalized welcome** with today's date
 
 ## 🔒 Security Considerations
@@ -332,6 +347,11 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 - **Daily Constraint**: One weight entry per user per day
 - **Smart Fallbacks**: Shows latest weight when today's unavailable
 - **User Prompts**: Automatic prompting for missing daily weight
+- **Image Support**: Optional photo uploads for weight documentation
+- **Monthly View**: Comprehensive calendar layout at `/weight`
+- **Quick Navigation**: Month/year selector for historical data
+- **Image Preview**: Full-size modal for viewing weight photos
+- **Full CRUD**: Edit and delete capabilities for all weight entries
 
 ### Image Management
 - **Cloudinary Integration**: Automatic optimization and CDN delivery
@@ -357,10 +377,15 @@ The app is fully functional with:
 - ✅ **Admin panel for user management**
 - ✅ Working dashboard with daily overview and weight tracking
 - ✅ Food tracking with AI-powered macro calculation and image analysis
+- ✅ **Water consumption tracking in macro calculations**
 - ✅ Health monitoring with Bristol Stool Scale and photo documentation
 - ✅ Image upload for both food and health entries (file system + camera)
 - ✅ Enhanced AI macro calculation using food images
 - ✅ Separate daily weight tracking system with smart prompts
+- ✅ **Enhanced weight tracking with optional image uploads**
+- ✅ **Monthly weight entries view with calendar layout**
+- ✅ **Image preview modal for weight photos**
+- ✅ **Month/year navigation for historical data**
 - ✅ Full data editing capabilities (edit/delete all entries)
 - ✅ Supabase database storing all data locally
 - ✅ Modern, responsive UI with consistent design
@@ -373,15 +398,21 @@ The app is fully functional with:
 1. **Sign up** with email at `/auth/signup` OR **sign in with Google**
 2. **Start with free tier** (20 AI calculations, 5 uploads/month)
 3. **Track daily weight** with automatic prompting and smart display
-4. **Track meals** with AI-powered macro calculation
-5. **Upload food photos** from device or camera for better macro accuracy
-6. **Monitor usage** on the subscription page
-7. **Upgrade to premium** for unlimited access
-8. **Edit/delete any entry** with full-featured modal forms
-9. **Monitor health** using medical-grade Bristol Stool Scale
-10. **Add health photos** for comprehensive documentation
-11. **View daily summaries** on the dashboard with complete macro breakdowns
-12. **Experience seamless UX** with usage warnings and upgrade prompts
+4. **Upload weight photos** for comprehensive documentation
+5. **View weight history** with monthly calendar layout at `/weight`
+6. **Navigate weight data** with month/year selector for any period
+7. **Preview weight photos** in full-size modal by clicking images
+8. **Edit weight entries** with full CRUD operations
+9. **Track meals** with AI-powered macro calculation including water content
+10. **Upload food photos** from device or camera for better macro accuracy
+11. **Monitor water intake** from food and beverages automatically calculated
+12. **Monitor usage** on the subscription page
+13. **Upgrade to premium** for unlimited access
+14. **Edit/delete any entry** with full-featured modal forms
+15. **Monitor health** using medical-grade Bristol Stool Scale
+16. **Add health photos** for comprehensive documentation
+17. **View daily summaries** on the dashboard with complete macro breakdowns
+18. **Experience seamless UX** with usage warnings and upgrade prompts
 
 ### Admin Features:
 - **Grant unlimited access** to friends/team members at `/admin`

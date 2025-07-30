@@ -154,10 +154,11 @@ export default function FoodPage() {
         acc.protein += entry.calculatedMacros.protein || 0;
         acc.carbs += entry.calculatedMacros.carbs || 0;
         acc.fat += entry.calculatedMacros.fat || 0;
+        acc.water += entry.calculatedMacros.water || 0;
       }
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 }
   );
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
@@ -268,7 +269,7 @@ export default function FoodPage() {
               <CardDescription>Total nutrition from all meals</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">{Math.round(totalMacros.calories)}</div>
                   <div className="text-sm text-gray-600">Calories</div>
@@ -284,6 +285,10 @@ export default function FoodPage() {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">{Math.round(totalMacros.fat)}g</div>
                   <div className="text-sm text-gray-600">Fat</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-600">{Math.round(totalMacros.water)}ml</div>
+                  <div className="text-sm text-gray-600">Water</div>
                 </div>
               </div>
             </CardContent>
@@ -340,7 +345,7 @@ export default function FoodPage() {
                         </div>
                       </div>
                       {entry.calculatedMacros ? (
-                        <div className="grid grid-cols-4 gap-2 mt-2 text-sm">
+                        <div className="grid grid-cols-5 gap-2 mt-2 text-sm">
                           <div className="text-center bg-blue-50 p-2 rounded">
                             <div className="font-medium text-blue-700">
                               {Math.round(entry.calculatedMacros.calories)}
@@ -364,6 +369,12 @@ export default function FoodPage() {
                               {Math.round(entry.calculatedMacros.fat)}g
                             </div>
                             <div className="text-xs text-red-600">fat</div>
+                          </div>
+                          <div className="text-center bg-cyan-50 p-2 rounded">
+                            <div className="font-medium text-cyan-700">
+                              {Math.round(entry.calculatedMacros.water || 0)}ml
+                            </div>
+                            <div className="text-xs text-cyan-600">water</div>
                           </div>
                         </div>
                       ) : (

@@ -73,6 +73,7 @@ model WeightEntry {
   userId    String
   localDate DateTime // Local date (normalized to start of day in local time)
   weight    Float    // Weight in kg
+  imageUrl  String?  // Optional image URL for weight entry
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
