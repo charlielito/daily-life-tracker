@@ -302,9 +302,19 @@ export default function WeightPage() {
             </Button>
             
             <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold">
-                {format(selectedMonth, "MMMM yyyy")}
-              </h2>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="month"
+                  value={format(selectedMonth, "yyyy-MM")}
+                  onChange={(e) => {
+                    const [year, month] = e.target.value.split('-').map(Number);
+                    const newDate = new Date(year, month - 1, 1);
+                    setSelectedMonth(newDate);
+                  }}
+                  className="w-[180px]"
+                />
+              </div>
+              
               <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
                 Today
               </Button>
