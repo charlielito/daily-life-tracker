@@ -11,7 +11,7 @@ import { X, Scale } from "lucide-react";
 interface WeightPromptProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (weight: number, imageUrl?: string) => void;
+  onSave: (weight: number, imageUrl?: string | null) => void;
   isLoading?: boolean;
   date: Date;
 }
@@ -33,7 +33,7 @@ export function WeightPrompt({
   const onSubmit = (data: WeightFormData) => {
     const weight = parseFloat(data.weight);
     if (!isNaN(weight) && weight > 0) {
-      onSave(weight, uploadedImageUrl);
+      onSave(weight, uploadedImageUrl || null); // Explicitly pass null when undefined
       reset();
       setUploadedImageUrl(undefined);
     }

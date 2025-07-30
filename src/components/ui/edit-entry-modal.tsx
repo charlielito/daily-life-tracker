@@ -86,7 +86,7 @@ export function EditEntryModal({
         id: entry.id,
         description: data.description,
         localDateTime: localDateTime,
-        imageUrl: uploadedImageUrl,
+        imageUrl: uploadedImageUrl || null, // Explicitly pass null when undefined
       });
     } else {
       onSave({
@@ -96,7 +96,7 @@ export function EditEntryModal({
         color: data.color,
         painLevel: data.painLevel,
         notes: data.notes,
-        imageUrl: uploadedImageUrl,
+        imageUrl: uploadedImageUrl || null, // Explicitly pass null when undefined
       });
     }
   };

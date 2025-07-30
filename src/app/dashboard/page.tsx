@@ -113,11 +113,11 @@ export default function DashboardPage() {
     }
   }, [session, weightLoading, todayWeight, today]);
 
-  const handleSaveWeight = (weight: number, imageUrl?: string) => {
+  const handleSaveWeight = (weight: number, imageUrl?: string | null) => {
     upsertWeight.mutate({
       localDate: convertLocalToUTCForStorage(today),
       weight,
-      imageUrl,
+      imageUrl: imageUrl || undefined, // Convert null to undefined for API
     });
   };
 

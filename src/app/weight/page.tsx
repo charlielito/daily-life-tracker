@@ -17,7 +17,7 @@ import { convertUTCToLocalDisplay } from "@/utils/dateUtils";
 interface WeightEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { id: string; weight: number; imageUrl?: string }) => void;
+  onSave: (data: { id: string; weight: number; imageUrl?: string | null }) => void;
   onDelete: () => void;
   entry: any;
   isLoading?: boolean;
@@ -88,7 +88,7 @@ function WeightEditModal({
       onSave({
         id: entry.id,
         weight: weightValue,
-        imageUrl: uploadedImageUrl,
+        imageUrl: uploadedImageUrl || null, // Explicitly pass null when undefined
       });
     }
   };
@@ -225,7 +225,7 @@ export default function WeightPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = (data: { id: string; weight: number; imageUrl?: string }) => {
+  const handleSaveEdit = (data: { id: string; weight: number; imageUrl?: string | null }) => {
     updateWeight.mutate(data);
   };
 
