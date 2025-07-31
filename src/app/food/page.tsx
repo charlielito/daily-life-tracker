@@ -15,7 +15,7 @@ import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
 import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 
 interface FoodFormData {
   description: string;
@@ -96,7 +96,7 @@ export default function FoodPage() {
   });
 
   const { data: dayMacros = [], isLoading } = api.macros.getToday.useQuery(
-    { date: selectedDate },
+    { date: getStartOfDay(selectedDate) },
     { enabled: !!session }
   );
 

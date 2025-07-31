@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Activity, Edit, Trash2, Clock, Flame } from "lucide-react";
 import { ActivityEditModal } from "@/components/ui/activity-edit-modal";
-import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 
 interface ActivityFormData {
   activityType: string;
@@ -114,12 +114,12 @@ export default function ActivityPage() {
   });
 
   const { data: dayActivities = [], isLoading } = api.activity.getToday.useQuery(
-    { date: selectedDate },
+    { date: getStartOfDay(selectedDate) },
     { enabled: !!session }
   );
 
   const { data: calorieBalance } = api.activity.getDailyCalorieBalance.useQuery(
-    { date: selectedDate },
+    { date: getStartOfDay(selectedDate) },
     { enabled: !!session }
   );
 

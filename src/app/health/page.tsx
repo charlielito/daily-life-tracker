@@ -15,7 +15,7 @@ import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
 import { Edit } from "lucide-react";
 import Image from "next/image";
-import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 
 interface HealthFormData {
   localDateTime: string; // Single field for datetime-local input
@@ -119,7 +119,7 @@ export default function HealthPage() {
   });
 
   const { data: dayEntries = [], isLoading } = api.intestinal.getToday.useQuery(
-    { date: selectedDate },
+    { date: getStartOfDay(selectedDate) },
     { enabled: !!session }
   );
 

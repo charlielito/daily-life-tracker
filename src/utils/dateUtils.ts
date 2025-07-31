@@ -39,3 +39,11 @@ export function convertLocalToUTCForStorage(localDateTime: Date | string): Date 
     inputDateTime.getMilliseconds()
   ));
 } 
+
+/**
+ * Get the start of the day for a given date
+ * This ensures the date is normalized to the start of the day in local timezone
+ */
+export function getStartOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
