@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Authentication required. Please sign in to upload images." },
         { status: 401 }
       );
     }
@@ -91,8 +91,24 @@ export async function POST(request: NextRequest) {
     
     if (!file) {
       return NextResponse.json(
-        { error: "No file provided" },
+        { error: "No file provided. Please select an image to upload." },
         { status: 400 }
+      );
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Invalid file type. Please select an image file (JPEG, PNG, GIF, etc.)." },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File too large. Please select an image smaller than 10MB." },
+        { status: 413 }
       );
     }
 
@@ -112,8 +128,12 @@ export async function POST(request: NextRequest) {
           ],
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(new Error("Failed to upload to cloud storage. Please try again."));
+          } else {
+            resolve(result);
+          }
         }
       ).end(buffer);
     });
@@ -126,10 +146,27 @@ export async function POST(request: NextRequest) {
       publicId: (result as any).public_id,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("Upload API error:", error);
+    
+    // Provide more specific error messages based on the error type
+    let errorMessage = "Upload failed. Please try again.";
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes("cloud storage")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("limit")) {
+        errorMessage = error.message;
+        statusCode = 403;
+      } else if (error.message.includes("Authentication")) {
+        errorMessage = error.message;
+        statusCode = 401;
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 } 
