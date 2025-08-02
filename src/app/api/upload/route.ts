@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced file validation for mobile devices
-    console.log("File details:", {
+    console.error("File details:", {
       name: file.name,
       type: file.type,
       size: file.size,
