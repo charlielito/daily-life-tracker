@@ -67,7 +67,7 @@ async function incrementAiUsage(userId: string, db: any) {
 }
 
 // Reusable function for AI macro calculation
-async function calculateMacros(description: string, imageUrl?: string): Promise<string | undefined> {
+async function calculateMacros(description: string, imageUrl?: string): Promise<{ macros?: string; error?: string }> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
@@ -97,15 +97,51 @@ Analyze the image at: ${imageUrl}`;
     // Extract JSON from response
     const jsonMatch = text.match(/\{[^}]+\}/);
     if (jsonMatch) {
-      const parsedMacros = JSON.parse(jsonMatch[0]);
-      return JSON.stringify(parsedMacros); // Store as string for SQLite
+      try {
+        const parsedMacros = JSON.parse(jsonMatch[0]);
+        
+        // Validate that we have the required fields
+        const requiredFields = ['calories', 'protein', 'carbs', 'fat', 'water'];
+        const hasAllFields = requiredFields.every(field => typeof parsedMacros[field] === 'number');
+        
+        if (!hasAllFields) {
+          return { 
+            error: "AI calculation returned incomplete data. Please try again or provide a more detailed description." 
+          };
+        }
+        
+        return { macros: JSON.stringify(parsedMacros) };
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        return { 
+          error: "AI calculation returned invalid data. Please try again with a more detailed description." 
+        };
+      }
+    } else {
+      return { 
+        error: "AI calculation failed to return valid data. Please try again with a more detailed description." 
+      };
     }
   } catch (error) {
     console.error("AI macro calculation failed:", error);
-    // Return undefined if AI fails
+    
+    // Provide specific error messages based on the error type
+    if (error instanceof Error) {
+      if (error.message.includes("API_KEY")) {
+        return { error: "AI service configuration error. Please contact support." };
+      } else if (error.message.includes("quota") || error.message.includes("limit")) {
+        return { error: "AI service quota exceeded. Please try again later." };
+      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+        return { error: "Network error connecting to AI service. Please check your connection and try again." };
+      } else if (error.message.includes("timeout")) {
+        return { error: "AI calculation timed out. Please try again with a shorter description." };
+      }
+    }
+    
+    return { 
+      error: "AI calculation failed. Please try again or provide a more detailed description." 
+    };
   }
-  
-  return undefined;
 }
 
 export const macrosRouter = createTRPCRouter({
@@ -135,10 +171,18 @@ export const macrosRouter = createTRPCRouter({
       await checkAiUsageLimit(userId, ctx.db);
 
       // Calculate macros using AI
-      const calculatedMacros = await calculateMacros(input.description, input.imageUrl);
+      const calculationResult = await calculateMacros(input.description, input.imageUrl);
+
+      // Handle AI calculation errors
+      if (calculationResult.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: calculationResult.error,
+        });
+      }
 
       // Increment usage counter after successful AI calculation
-      if (calculatedMacros) {
+      if (calculationResult.macros) {
         await incrementAiUsage(userId, ctx.db);
       }
 
@@ -148,7 +192,7 @@ export const macrosRouter = createTRPCRouter({
           description: input.description,
           imageUrl: input.imageUrl,
           localDateTime: input.localDateTime,
-          calculatedMacros: calculatedMacros,
+          calculatedMacros: calculationResult.macros,
         },
       });
 
@@ -197,9 +241,15 @@ export const macrosRouter = createTRPCRouter({
         // Check AI usage limits before recalculation
         await checkAiUsageLimit(userId, ctx.db);
         
-        const newMacros = await calculateMacros(input.description, input.imageUrl);
-        if (newMacros) {
-          calculatedMacros = newMacros;
+        const calculationResult = await calculateMacros(input.description, input.imageUrl);
+        if (calculationResult.error) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: calculationResult.error,
+          });
+        }
+        if (calculationResult.macros) {
+          calculatedMacros = calculationResult.macros;
           // Increment usage counter after successful AI calculation
           await incrementAiUsage(userId, ctx.db);
         }

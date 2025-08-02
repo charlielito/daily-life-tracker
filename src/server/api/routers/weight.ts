@@ -108,7 +108,9 @@ export const weightRouter = createTRPCRouter({
       
       // Create start and end dates for the month
       const startDate = new Date(input.year, input.month - 1, 1);
+      startDate.setUTCHours(0, 0, 0, 0);
       const endDate = new Date(input.year, input.month, 0); // Last day of the month
+      endDate.setUTCHours(23, 59, 59, 999);
 
       const weightEntries = await ctx.db.weightEntry.findMany({
         where: {
