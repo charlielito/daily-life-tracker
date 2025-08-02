@@ -63,6 +63,9 @@ export function ImageUpload({
             case 413:
               errorMessage = "File too large. Please select a smaller image.";
               break;
+            case 408:
+              errorMessage = "Upload timed out. Please try again with a smaller image.";
+              break;
             case 500:
               errorMessage = "Server error. Please try again later.";
               break;
@@ -213,6 +216,26 @@ export function ImageUpload({
               {error.includes("sign in") && (
                 <p className="text-xs text-red-600 mt-2">
                   💡 Please refresh the page and try again
+                </p>
+              )}
+              {error.includes("timed out") && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Try selecting a smaller image or using a better internet connection
+                </p>
+              )}
+              {error.includes("too large") && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Try selecting a smaller image or reducing the image quality in your camera settings
+                </p>
+              )}
+              {error.includes("Invalid image") && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Try taking a new photo or selecting a different image from your gallery
+                </p>
+              )}
+              {error.includes("processing failed") && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Try a different image format (JPEG or PNG) or take a new photo
                 </p>
               )}
             </div>
