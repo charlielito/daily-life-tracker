@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Authentication required. Please sign in to upload images." },
         { status: 401 }
       );
     }
@@ -91,31 +91,107 @@ export async function POST(request: NextRequest) {
     
     if (!file) {
       return NextResponse.json(
-        { error: "No file provided" },
+        { error: "No file provided. Please select an image to upload." },
         { status: 400 }
       );
     }
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Validate file type - be more lenient for mobile devices
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { error: `Invalid file type: ${file.type}. Please select a JPEG, PNG, GIF, or WebP image.` },
+        { status: 400 }
+      );
+    }
 
-    // Upload to Cloudinary
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File too large. Please select an image smaller than 10MB." },
+        { status: 413 }
+      );
+    }
+
+    // Additional validation for very small files (likely corrupted)
+    if (file.size < 100) {
+      return NextResponse.json(
+        { error: "File appears to be corrupted or empty. Please try selecting a different image." },
+        { status: 400 }
+      );
+    }
+
+    // Convert file to buffer with better error handling
+    let buffer: Buffer;
+    try {
+      const bytes = await file.arrayBuffer();
+      buffer = Buffer.from(bytes);
+      
+      // Additional validation of buffer
+      if (buffer.length === 0) {
+        return NextResponse.json(
+          { error: "File appears to be empty. Please try selecting a different image." },
+          { status: 400 }
+        );
+      }
+    } catch (bufferError) {
+      console.error("Buffer conversion error:", bufferError);
+      return NextResponse.json(
+        { error: "Failed to process image file. Please try selecting a different image." },
+        { status: 400 }
+      );
+    }
+
+    // Upload to Cloudinary with enhanced error handling
     const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
+      const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: "auto",
-          folder: "daily-life-tracker", // Organize uploads in a folder
+          folder: "daily-life-tracker",
           transformation: [
-            { width: 800, height: 600, crop: "limit" }, // Limit max size
-            { quality: "auto" }, // Auto quality optimization
+            { width: 800, height: 600, crop: "limit" },
+            { quality: "auto" },
           ],
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error("Cloudinary upload error details:", {
+              message: error.message,
+              http_code: error.http_code,
+              name: error.name,
+              fileType: file.type,
+              fileSize: file.size
+            });
+            
+            // Provide specific error messages based on the error type
+            if (error.http_code === 400) {
+              reject(new Error("Invalid image format. Please try a different image."));
+            } else if (error.http_code === 413) {
+              reject(new Error("Image too large. Please select a smaller image."));
+            } else if (error.http_code === 500) {
+              reject(new Error("Cloud storage temporarily unavailable. Please try again in a few minutes."));
+            } else if (error.message.includes("JSON")) {
+              reject(new Error("Image processing failed. Please try a different image or format."));
+            } else {
+              reject(new Error("Failed to upload image. Please try again."));
+            }
+          } else {
+            resolve(result);
+          }
         }
-      ).end(buffer);
+      );
+
+      // Add timeout for mobile uploads
+      const timeout = setTimeout(() => {
+        uploadStream.destroy();
+        reject(new Error("Upload timed out. Please try again with a smaller image."));
+      }, 20000); // 20 second timeout
+
+      uploadStream.on('end', () => {
+        clearTimeout(timeout);
+      });
+
+      uploadStream.end(buffer);
     });
 
     // Increment usage counter after successful upload
@@ -126,10 +202,36 @@ export async function POST(request: NextRequest) {
       publicId: (result as any).public_id,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("Upload API error:", error);
+    
+    // Provide more specific error messages based on the error type
+    let errorMessage = "Upload failed. Please try again.";
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes("cloud storage")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("limit")) {
+        errorMessage = error.message;
+        statusCode = 403;
+      } else if (error.message.includes("Authentication")) {
+        errorMessage = error.message;
+        statusCode = 401;
+      } else if (error.message.includes("timed out")) {
+        errorMessage = error.message;
+        statusCode = 408;
+      } else if (error.message.includes("Invalid image")) {
+        errorMessage = error.message;
+        statusCode = 400;
+      } else if (error.message.includes("too large")) {
+        errorMessage = error.message;
+        statusCode = 413;
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 } 
