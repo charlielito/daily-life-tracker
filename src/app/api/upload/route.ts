@@ -96,14 +96,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enhanced file validation for mobile devices
-    console.error("File details:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: file.lastModified
-    });
-
     // Validate file type - be more lenient for mobile devices
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     if (!allowedTypes.includes(file.type.toLowerCase())) {
@@ -193,7 +185,7 @@ export async function POST(request: NextRequest) {
       const timeout = setTimeout(() => {
         uploadStream.destroy();
         reject(new Error("Upload timed out. Please try again with a smaller image."));
-      }, 30000); // 30 second timeout
+      }, 20000); // 20 second timeout
 
       uploadStream.on('end', () => {
         clearTimeout(timeout);
