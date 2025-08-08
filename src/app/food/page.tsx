@@ -16,6 +16,8 @@ import { format } from "date-fns";
 import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
+import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
+import { Info } from "lucide-react";
 
 interface FoodFormData {
   description: string;
@@ -30,6 +32,8 @@ export default function FoodPage() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [detailsEntry, setDetailsEntry] = useState<any>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -373,37 +377,57 @@ export default function FoodPage() {
                         </div>
                       </div>
                       {entry.calculatedMacros ? (
-                        <div className="grid grid-cols-5 gap-2 mt-2 text-sm">
-                          <div className="text-center bg-blue-50 p-2 rounded">
-                            <div className="font-medium text-blue-700">
-                              {Math.round(entry.calculatedMacros.calories)}
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-5 gap-2 mt-2 text-sm">
+                            <div className="text-center bg-blue-50 p-2 rounded">
+                              <div className="font-medium text-blue-700">
+                                {Math.round(entry.calculatedMacros.calories)}
+                              </div>
+                              <div className="text-xs text-blue-600">cal</div>
                             </div>
-                            <div className="text-xs text-blue-600">cal</div>
-                          </div>
-                          <div className="text-center bg-green-50 p-2 rounded">
-                            <div className="font-medium text-green-700">
-                              {Math.round(entry.calculatedMacros.protein)}g
+                            <div className="text-center bg-green-50 p-2 rounded">
+                              <div className="font-medium text-green-700">
+                                {Math.round(entry.calculatedMacros.protein)}g
+                              </div>
+                              <div className="text-xs text-green-600">protein</div>
                             </div>
-                            <div className="text-xs text-green-600">protein</div>
-                          </div>
-                          <div className="text-center bg-yellow-50 p-2 rounded">
-                            <div className="font-medium text-yellow-700">
-                              {Math.round(entry.calculatedMacros.carbs)}g
+                            <div className="text-center bg-yellow-50 p-2 rounded">
+                              <div className="font-medium text-yellow-700">
+                                {Math.round(entry.calculatedMacros.carbs)}g
+                              </div>
+                              <div className="text-xs text-yellow-600">carbs</div>
                             </div>
-                            <div className="text-xs text-yellow-600">carbs</div>
-                          </div>
-                          <div className="text-center bg-red-50 p-2 rounded">
-                            <div className="font-medium text-red-700">
-                              {Math.round(entry.calculatedMacros.fat)}g
+                            <div className="text-center bg-red-50 p-2 rounded">
+                              <div className="font-medium text-red-700">
+                                {Math.round(entry.calculatedMacros.fat)}g
+                              </div>
+                              <div className="text-xs text-red-600">fat</div>
                             </div>
-                            <div className="text-xs text-red-600">fat</div>
-                          </div>
-                          <div className="text-center bg-cyan-50 p-2 rounded">
-                            <div className="font-medium text-cyan-700">
-                              {Math.round(entry.calculatedMacros.water || 0)}ml
+                            <div className="text-center bg-cyan-50 p-2 rounded">
+                              <div className="font-medium text-cyan-700">
+                                {Math.round(entry.calculatedMacros.water || 0)}ml
+                              </div>
+                              <div className="text-xs text-cyan-600">water</div>
                             </div>
-                            <div className="text-xs text-cyan-600">water</div>
                           </div>
+                          
+                          {/* Details Button */}
+                          {entry.calculationExplanation && (
+                            <div className="flex justify-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDetailsEntry(entry);
+                                  setIsDetailsModalOpen(true);
+                                }}
+                                className="text-xs"
+                              >
+                                <Info className="h-3 w-3 mr-1" />
+                                View Calculation Details
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500 italic">
@@ -432,6 +456,18 @@ export default function FoodPage() {
         type="food"
         isLoading={updateMacroEntry.isLoading || deleteMacroEntry.isLoading}
         error={updateMacroEntry.error || deleteMacroEntry.error}
+      />
+
+      {/* Macro Details Modal */}
+      <MacroDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setDetailsEntry(null);
+        }}
+        macros={detailsEntry?.calculatedMacros}
+        explanations={detailsEntry?.calculationExplanation}
+        description={detailsEntry?.description || ""}
       />
     </div>
   );
