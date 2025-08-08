@@ -67,15 +67,35 @@ async function incrementAiUsage(userId: string, db: any) {
 }
 
 // Reusable function for AI macro calculation
-async function calculateMacros(description: string, imageUrl?: string): Promise<{ macros?: string; error?: string }> {
+async function calculateMacros(description: string, imageUrl?: string): Promise<{ macros?: string; explanation?: string; error?: string }> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     let prompt = `Please analyze this food description and provide macronutrient information in JSON format: "${description}". 
-    Return only a JSON object with: {"calories": number, "protein": number, "carbs": number, "fat": number, "water": number}. 
+    
+    Return a JSON object with the following structure:
+    {
+      "macros": {
+        "calories": number,
+        "protein": number, 
+        "carbs": number,
+        "fat": number,
+        "water": number
+      },
+      "explanation": {
+        "calories": "Brief explanation of how calories were estimated",
+        "protein": "Brief explanation of protein calculation",
+        "carbs": "Brief explanation of carbohydrate calculation", 
+        "fat": "Brief explanation of fat calculation",
+        "water": "Brief explanation of water content estimation"
+      }
+    }
+    
     Estimate reasonable values based on typical portions. 
     For water content, estimate the water content in milliliters (ml) that would be consumed from this food/drink. 
-    Consider both the natural water content of foods and any beverages included.`;
+    Consider both the natural water content of foods and any beverages included.
+    
+    For each macro, provide a brief explanation of how you calculated it, considering portion size, ingredients, and cooking methods.`;
 
     if (imageUrl) {
       prompt += ` 
@@ -94,30 +114,58 @@ Analyze the image at: ${imageUrl}`;
     const response = await result.response;
     const text = response.text();
     
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[^}]+\}/);
+    // Extract JSON from response - handle both markdown code blocks and plain JSON
+    let jsonText = text;
+    
+    // Remove markdown code blocks if present
+    if (text.includes('```json')) {
+      jsonText = text.replace(/```json\n?/, '').replace(/```\n?/, '');
+    } else if (text.includes('```')) {
+      jsonText = text.replace(/```\n?/, '').replace(/```\n?/, '');
+    }
+    
+    // Try to find JSON object with a more robust regex
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
-        const parsedMacros = JSON.parse(jsonMatch[0]);
+        const parsedResponse = JSON.parse(jsonMatch[0]);
         
         // Validate that we have the required fields
-        const requiredFields = ['calories', 'protein', 'carbs', 'fat', 'water'];
-        const hasAllFields = requiredFields.every(field => typeof parsedMacros[field] === 'number');
+        const requiredMacroFields = ['calories', 'protein', 'carbs', 'fat', 'water'];
+        const hasAllMacroFields = requiredMacroFields.every(field => 
+          parsedResponse.macros && typeof parsedResponse.macros[field] === 'number'
+        );
         
-        if (!hasAllFields) {
+        const hasAllExplanationFields = requiredMacroFields.every(field => 
+          parsedResponse.explanation && typeof parsedResponse.explanation[field] === 'string'
+        );
+        
+        if (!hasAllMacroFields) {
           return { 
-            error: "AI calculation returned incomplete data. Please try again or provide a more detailed description." 
+            error: "AI calculation returned incomplete macro data. Please try again or provide a more detailed description." 
           };
         }
         
-        return { macros: JSON.stringify(parsedMacros) };
+        if (!hasAllExplanationFields) {
+          return { 
+            error: "AI calculation returned incomplete explanation data. Please try again or provide a more detailed description." 
+          };
+        }
+        
+        return { 
+          macros: JSON.stringify(parsedResponse.macros),
+          explanation: JSON.stringify(parsedResponse.explanation)
+        };
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
+        console.error("Json match:", jsonMatch[0]);
+        console.error("AI response invalid:", text);
         return { 
           error: "AI calculation returned invalid data. Please try again with a more detailed description." 
         };
       }
     } else {
+      console.error("AI response invalid:", text);
       return { 
         error: "AI calculation failed to return valid data. Please try again with a more detailed description." 
       };
@@ -154,8 +202,6 @@ export const macrosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      console.log("Session in macros.create:", ctx.session);
-      console.log("User ID:", ctx.session?.user?.id);
       
       
       if (!ctx.session?.user?.id) {
@@ -193,14 +239,16 @@ export const macrosRouter = createTRPCRouter({
           imageUrl: input.imageUrl,
           localDateTime: input.localDateTime,
           calculatedMacros: calculationResult.macros,
+          calculationExplanation: calculationResult.explanation,
         },
       });
 
 
-      // Parse the JSON string back to object for the response
+      // Parse the JSON strings back to objects for the response
       return {
         ...entry,
         calculatedMacros: entry.calculatedMacros ? JSON.parse(entry.calculatedMacros as string) : null,
+        calculationExplanation: entry.calculationExplanation ? JSON.parse(entry.calculationExplanation as string) : null,
       };
     }),
 
@@ -237,6 +285,7 @@ export const macrosRouter = createTRPCRouter({
 
       // Calculate macros using AI if description or image changed
       let calculatedMacros: string | undefined = (existingEntry.calculatedMacros as string) || undefined;
+      let calculationExplanation: string | undefined = (existingEntry.calculationExplanation as string) || undefined;
       if (input.description !== existingEntry.description || input.imageUrl !== existingEntry.imageUrl) {
         // Check AI usage limits before recalculation
         await checkAiUsageLimit(userId, ctx.db);
@@ -250,6 +299,7 @@ export const macrosRouter = createTRPCRouter({
         }
         if (calculationResult.macros) {
           calculatedMacros = calculationResult.macros;
+          calculationExplanation = calculationResult.explanation;
           // Increment usage counter after successful AI calculation
           await incrementAiUsage(userId, ctx.db);
         }
@@ -263,12 +313,14 @@ export const macrosRouter = createTRPCRouter({
           imageUrl: input.imageUrl,
           localDateTime: input.localDateTime,
           calculatedMacros,
+          calculationExplanation,
         },
       });
 
       return {
         ...updatedEntry,
         calculatedMacros: updatedEntry.calculatedMacros ? JSON.parse(updatedEntry.calculatedMacros as string) : null,
+        calculationExplanation: updatedEntry.calculationExplanation ? JSON.parse(updatedEntry.calculationExplanation as string) : null,
       };
     }),
 
@@ -337,6 +389,7 @@ export const macrosRouter = createTRPCRouter({
       return entries.map((entry: any) => ({
         ...entry,
         calculatedMacros: entry.calculatedMacros ? JSON.parse(entry.calculatedMacros as string) : null,
+        calculationExplanation: entry.calculationExplanation ? JSON.parse(entry.calculationExplanation as string) : null,
       }));
     }),
 }); 

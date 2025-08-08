@@ -13,12 +13,16 @@ import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { format } from "date-fns";
 import Image from "next/image";
-import { AlertTriangle, Crown, Zap, Flame, User } from "lucide-react";
+import { AlertTriangle, Crown, Zap, Flame, User, Info } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [detailsEntry, setDetailsEntry] = useState<any>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   // Ensure today is properly normalized to start of day in local timezone
   const [today] = useState(() => {
@@ -657,37 +661,57 @@ export default function DashboardPage() {
                           </div>
                           {/* Macros display */}
                           {entry.calculatedMacros ? (
-                            <div className="grid grid-cols-5 gap-1 mt-2 text-xs">
-                              <div className="text-center bg-blue-50 px-1 py-1 rounded">
-                                <div className="font-medium text-blue-700">
-                                  {Math.round(entry.calculatedMacros.calories)}
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-5 gap-1 mt-2 text-xs">
+                                <div className="text-center bg-blue-50 px-1 py-1 rounded">
+                                  <div className="font-medium text-blue-700">
+                                    {Math.round(entry.calculatedMacros.calories)}
+                                  </div>
+                                  <div className="text-[10px] text-blue-600">cal</div>
                                 </div>
-                                <div className="text-[10px] text-blue-600">cal</div>
-                              </div>
-                              <div className="text-center bg-green-50 px-1 py-1 rounded">
-                                <div className="font-medium text-green-700">
-                                  {Math.round(entry.calculatedMacros.protein)}g
+                                <div className="text-center bg-green-50 px-1 py-1 rounded">
+                                  <div className="font-medium text-green-700">
+                                    {Math.round(entry.calculatedMacros.protein)}g
+                                  </div>
+                                  <div className="text-[10px] text-green-600">protein</div>
                                 </div>
-                                <div className="text-[10px] text-green-600">protein</div>
-                              </div>
-                              <div className="text-center bg-yellow-50 px-1 py-1 rounded">
-                                <div className="font-medium text-yellow-700">
-                                  {Math.round(entry.calculatedMacros.carbs)}g
+                                <div className="text-center bg-yellow-50 px-1 py-1 rounded">
+                                  <div className="font-medium text-yellow-700">
+                                    {Math.round(entry.calculatedMacros.carbs)}g
+                                  </div>
+                                  <div className="text-[10px] text-yellow-600">carbs</div>
                                 </div>
-                                <div className="text-[10px] text-yellow-600">carbs</div>
-                              </div>
-                              <div className="text-center bg-red-50 px-1 py-1 rounded">
-                                <div className="font-medium text-red-700">
-                                  {Math.round(entry.calculatedMacros.fat)}g
+                                <div className="text-center bg-red-50 px-1 py-1 rounded">
+                                  <div className="font-medium text-red-700">
+                                    {Math.round(entry.calculatedMacros.fat)}g
+                                  </div>
+                                  <div className="text-[10px] text-red-600">fat</div>
                                 </div>
-                                <div className="text-[10px] text-red-600">fat</div>
-                              </div>
-                              <div className="text-center bg-cyan-50 px-1 py-1 rounded">
-                                <div className="font-medium text-cyan-700">
-                                  {Math.round(entry.calculatedMacros.water || 0)}ml
+                                <div className="text-center bg-cyan-50 px-1 py-1 rounded">
+                                  <div className="font-medium text-cyan-700">
+                                    {Math.round(entry.calculatedMacros.water || 0)}ml
+                                  </div>
+                                  <div className="text-[10px] text-cyan-600">water</div>
                                 </div>
-                                <div className="text-[10px] text-cyan-600">water</div>
                               </div>
+                              
+                              {/* Details Button */}
+                              {entry.calculationExplanation && (
+                                <div className="flex justify-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDetailsEntry(entry);
+                                      setIsDetailsModalOpen(true);
+                                    }}
+                                    className="text-[10px] h-6 px-2"
+                                  >
+                                    <Info className="h-3 w-3 mr-1" />
+                                    Details
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="text-xs text-gray-500 italic mt-1">
@@ -770,7 +794,7 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-
+      
       {/* Weight Prompt Modal */}
       <WeightPrompt
         isOpen={showWeightPrompt}
@@ -778,6 +802,18 @@ export default function DashboardPage() {
         onSave={handleSaveWeight}
         isLoading={upsertWeight.isLoading}
         date={today}
+      />
+      
+      {/* Macro Details Modal */}
+      <MacroDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setDetailsEntry(null);
+        }}
+        macros={detailsEntry?.calculatedMacros}
+        explanations={detailsEntry?.calculationExplanation}
+        description={detailsEntry?.description || ""}
       />
     </div>
   );
