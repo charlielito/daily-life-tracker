@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { format } from "date-fns";
 import Image from "next/image";
-import { AlertTriangle, Crown, Zap, Flame, User, Info } from "lucide-react";
+import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   
   // Ensure today is properly normalized to start of day in local timezone
   const [today] = useState(() => {
@@ -228,7 +229,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header with Sign Out */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -319,7 +320,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Dashboard Content */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Profile Setup Prompt */}
         {userProfile && (!(userProfile as any).age || !(userProfile as any).gender || !(userProfile as any).heightCm) && (
           <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
@@ -353,27 +354,27 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left side: Calorie Balance */}
+              <div className="grid grid-cols-1 gap-6">
+                {/* Calorie Balance */}
                 <div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-4 gap-2 md:gap-4 mb-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
-                      <div className="text-sm text-gray-600">Consumed</div>
+                      <div className="text-xl md:text-2xl font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
+                      <div className="text-xs text-gray-600">Consumed</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
-                      <div className="text-sm text-gray-600">Burned Total</div>
+                      <div className="text-xl md:text-2xl font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
+                      <div className="text-xs text-gray-600">Burned Total</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">{calorieBalance.caloriesBurnedFromActivity}</div>
-                      <div className="text-sm text-gray-600">From Exercise</div>
+                      <div className="text-xl md:text-2xl font-bold text-purple-600">{calorieBalance.caloriesBurnedFromActivity}</div>
+                      <div className="text-xs text-gray-600">From Exercise</div>
                     </div>
                     <div className="text-center">
-                      <div className={`text-2xl font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
+                      <div className={`text-xl md:text-2xl font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
                         {calorieBalance.isDeficit ? '-' : '+'}{Math.abs(calorieBalance.calorieBalance)}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-xs text-gray-600">
                         {calorieBalance.isDeficit ? 'Deficit' : 'Surplus'}
                       </div>
                     </div>
@@ -389,53 +390,10 @@ export default function DashboardPage() {
                         : "⚠️ Calorie Surplus - Consider more activity!"}
                     </div>
                   </div>
-                </div>
-
-                {/* Right side: User Profile Info */}
-                <div className="border-t md:border-t-0 md:border-l border-orange-200 pl-0 md:pl-6 pt-4 md:pt-0">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-orange-800">Your Profile</h3>
-                    <Link href="/profile">
-                      <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700">
-                        Edit Profile
-                      </Button>
-                    </Link>
-                  </div>
-                  {userProfile && (
-                    <div className="space-y-2">
-                      {userProfile.age && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Age:</span>
-                          <span className="font-medium">{userProfile.age} years</span>
-                        </div>
-                      )}
-                      {userProfile.gender && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Gender:</span>
-                          <span className="font-medium capitalize">{userProfile.gender}</span>
-                        </div>
-                      )}
-                      {userProfile.heightCm && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Height:</span>
-                          <span className="font-medium">{userProfile.heightCm} cm</span>
-                        </div>
-                      )}
-                      {userProfile.activityLevel && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Activity Level:</span>
-                          <span className="font-medium capitalize">{userProfile.activityLevel.replace(/_/g, ' ')}</span>
-                        </div>
-                      )}
-                      {(!userProfile.age || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
-                        <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded mt-2">
-                          ⚠️ Complete your profile for more accurate calculations
-                        </div>
-                      )}
+                  <div className="text-center mt-3">
+                    <div className="text-xs text-gray-500">
+                      BMR: {calorieBalance.bmr} cal/day • TDEE: {calorieBalance.tdee} cal/day
                     </div>
-                  )}
-                  <div className="text-xs text-gray-500 mt-4">
-                    BMR: {calorieBalance.bmr} cal/day • TDEE: {calorieBalance.tdee} cal/day
                   </div>
                 </div>
               </div>
@@ -443,64 +401,176 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* Daily Overview Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-blue-700">Today's Calories</CardTitle>
+        {/* Profile Card - Separate from Calorie Balance */}
+        {userProfile && (
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardHeader className="pb-2 pt-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-blue-800 text-sm">
+                  <User className="h-4 w-4" />
+                  Your Profile
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsProfileExpanded(!isProfileExpanded)}
+                    className="text-blue-600 hover:text-blue-700 text-xs h-7 px-2"
+                  >
+                    {isProfileExpanded ? (
+                      <>
+                        <ChevronUp className="h-3 w-3 mr-1" />
+                        Hide
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3 mr-1" />
+                        Show
+                      </>
+                    )}
+                  </Button>
+                  <Link href="/profile">
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 text-xs h-7 px-2">
+                      Edit
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-800">{Math.round(totalMacros.calories)}</div>
-              <p className="text-xs text-blue-600 mt-1">kcal consumed</p>
+            <CardContent className="pt-0 pb-3">
+              {isProfileExpanded ? (
+                <div className="space-y-1">
+                  {userProfile.age && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-xs">Age:</span>
+                      <span className="font-medium text-xs">{userProfile.age} years</span>
+                    </div>
+                  )}
+                  {userProfile.gender && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-xs">Gender:</span>
+                      <span className="font-medium text-xs capitalize">{userProfile.gender}</span>
+                    </div>
+                  )}
+                  {userProfile.heightCm && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-xs">Height:</span>
+                      <span className="font-medium text-xs">{userProfile.heightCm} cm</span>
+                    </div>
+                  )}
+                  {userProfile.activityLevel && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-xs">Activity:</span>
+                      <span className="font-medium text-xs capitalize">{userProfile.activityLevel.replace(/_/g, ' ')}</span>
+                    </div>
+                  )}
+                  {(!userProfile.age || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
+                    <div className="text-xs text-blue-600 bg-blue-50 p-1.5 rounded mt-1">
+                      ⚠️ Complete profile for accurate calculations
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-gray-600 text-xs">
+                  
+                </div>
+              )}
             </CardContent>
           </Card>
+        )}
 
-          <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-cyan-700">Water Intake</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-cyan-800">{Math.round(totalMacros.water)}</div>
-              <p className="text-xs text-cyan-600 mt-1">ml from food</p>
-            </CardContent>
-          </Card>
+        {/* Today's Total Macros Card */}
+        <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="flex items-center gap-2 text-emerald-800 text-sm">
+              🍽️ Today's Total Macros
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 pb-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600">{Math.round(totalMacros.calories)}</div>
+                <div className="text-xs text-gray-600">calories</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-600">{Math.round(totalMacros.protein)}g</div>
+                <div className="text-xs text-gray-600">protein</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-yellow-600">{Math.round(totalMacros.carbs)}g</div>
+                <div className="text-xs text-gray-600">carbs</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-red-600">{Math.round(totalMacros.fat)}g</div>
+                <div className="text-xs text-gray-600">fat</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-cyan-600">{Math.round(totalMacros.water)}ml</div>
+                <div className="text-xs text-gray-600">water</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        {/* Daily Overview Cards - Optimized for mobile (2 per row) */}
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-green-700">Meals Logged</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-800">{todayMacros.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-800">{todayMacros.length}</div>
               <p className="text-xs text-green-600 mt-1">entries today</p>
+              <div className="mt-3">
+                <Link href="/food">
+                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
+                    🍽️ Log Meal
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-purple-700">Health Entries</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-800">{todayIntestinal.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-purple-800">{todayIntestinal.length}</div>
               <p className="text-xs text-purple-600 mt-1">logs today</p>
+              <div className="mt-3">
+                <Link href="/health">
+                  <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                    🏥 Log Health
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-amber-700">Activities</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-amber-800">{todayActivities.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-amber-800">{todayActivities.length}</div>
               <p className="text-xs text-amber-600 mt-1">exercises today</p>
+              <div className="mt-3">
+                <Link href="/activity">
+                  <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                    🏃‍♂️ Log Activity
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-orange-700">Current Weight</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-800">
+              <div className="text-2xl md:text-3xl font-bold text-orange-800">
                 {displayWeight ? `${displayWeight}kg` : "—"}
               </div>
               <p className="text-xs text-orange-600 mt-1">
@@ -511,7 +581,7 @@ export default function DashboardPage() {
                     : "no data"
                 }
               </p>
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-col gap-1 mt-2">
                 {!todayWeight && (
                   <Button
                     variant="ghost"
@@ -532,81 +602,6 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions - Prominent */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                🍽️ Log New Meal
-              </CardTitle>
-              <CardDescription>
-                Add a meal and get AI-powered macro calculation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/food">
-                <Button size="lg" className="w-full">
-                  Add Meal Now
-                </Button>
-              </Link>
-              {todayMacros.length > 0 && (
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  <p className="font-medium">Today's Macros:</p>
-                  <p>P: {Math.round(totalMacros.protein)}g | C: {Math.round(totalMacros.carbs)}g | F: {Math.round(totalMacros.fat)}g</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                🏥 Log Health Entry
-              </CardTitle>
-              <CardDescription>
-                Track intestinal health using Bristol Stool Scale
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/health">
-                <Button size="lg" className="w-full" variant="secondary">
-                  Log Health Now
-                </Button>
-              </Link>
-              {todayIntestinal.length > 0 && (
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  <p className="font-medium">Latest Entry:</p>
-                  <p>{format(convertUTCToLocalDisplay(todayIntestinal[todayIntestinal.length - 1].localDateTime), "h:mm a")} • Pain: {todayIntestinal[todayIntestinal.length - 1].painLevel}/10</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                🏃‍♂️ Log Activity
-              </CardTitle>
-              <CardDescription>
-                Track physical activities and calories burned
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/activity">
-                <Button size="lg" className="w-full" variant="secondary">
-                  Log Activity Now
-                </Button>
-              </Link>
-              {todayActivities.length > 0 && (
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  <p className="font-medium">Latest Activity:</p>
-                  <p>{todayActivities[todayActivities.length - 1].activityType} • {todayActivities[todayActivities.length - 1].caloriesBurned} cal burned</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
