@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { calculateAge } from "@/utils/ageUtils";
 
 // Activity types with average calorie burn rates per minute per kg of body weight
 const ACTIVITY_CALORIES: Record<string, { low: number; moderate: number; high: number }> = {
@@ -35,10 +36,10 @@ function calculateCaloriesBurned(
 }
 
 // Function to calculate BMR (Basal Metabolic Rate) using Mifflin-St Jeor Equation
-function calculateBMR(weight: number, heightCm?: number, age?: number, gender?: string): number {
+function calculateBMR(weight: number, heightCm?: number, birthDate?: Date, gender?: string): number {
   // Default values if user data is missing
   const defaultHeight = heightCm || 170; // cm
-  const defaultAge = age || 30;
+  const defaultAge = birthDate ? calculateAge(birthDate) : 30;
   const defaultGender = gender || "male";
 
   let bmr: number;
@@ -297,7 +298,7 @@ export const activityRouter = createTRPCRouter({
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
         select: {
-          age: true,
+          birthDate: true,
           gender: true,
           heightCm: true,
           activityLevel: true,
@@ -361,7 +362,7 @@ export const activityRouter = createTRPCRouter({
       const bmr = calculateBMR(
         weight.weight,
         user?.heightCm || undefined,
-        user?.age || undefined,
+        user?.birthDate || undefined,
         user?.gender || undefined
       );
 
@@ -388,7 +389,7 @@ export const activityRouter = createTRPCRouter({
   updateUserProfile: protectedProcedure
     .input(
       z.object({
-        age: z.number().positive().optional(),
+        birthDate: z.date().optional(),
         gender: z.enum(["male", "female"]).optional(),
         heightCm: z.number().positive().optional(),
         activityLevel: z.enum([
@@ -428,7 +429,7 @@ export const activityRouter = createTRPCRouter({
       const user = await ctx.db.user.findUnique({
         where: { id: ctx.session.user.id },
         select: {
-          age: true,
+          birthDate: true,
           gender: true,
           heightCm: true,
           activityLevel: true,

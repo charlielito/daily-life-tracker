@@ -34,6 +34,8 @@ A modern web application for tracking daily health metrics including nutrition, 
 ### User
 - id, email, password_hash, name, created_at, updated_at
 - **New**: subscription_status, customer_id, subscription_id, trial_end_date, monthly_ai_usage, monthly_uploads, is_unlimited
+- **Profile**: birth_date (Date), gender, height_cm, activity_level
+- **Note**: Migrated from storing age to storing birth_date for automatic age calculation
 
 ### MacroEntry
 - id, user_id, description, image_url?, hour, date, calculated_macros (JSON), created_at, updated_at

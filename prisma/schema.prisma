@@ -37,7 +37,7 @@ model User {
   isUnlimited        Boolean  @default(false) // Admin can set this to true for free unlimited access
 
   activityLevel       String?           @default("sedentary")
-  age                 Int?
+  birthDate           DateTime?
   gender              String?
   heightCm            Float?
   
