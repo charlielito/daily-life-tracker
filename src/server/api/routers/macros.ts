@@ -71,31 +71,41 @@ async function calculateMacros(description: string, imageUrl?: string): Promise<
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
-    let prompt = `Please analyze this food description and provide macronutrient information in JSON format: "${description}". 
+    let prompt = `Please analyze this food description and provide macronutrient information in a consistent format: "${description}". 
+    
+    IMPORTANT: You must ensure that the explanation values and final macro values are mathematically consistent.
+    
+    Follow this process:
+    1. FIRST, analyze the food and provide detailed explanations for each component
+    2. THEN, calculate the final macro values based on those explanations
+    3. ENSURE the final macro values match what you explained
     
     Return a JSON object with the following structure:
     {
+      "explanation": {
+        "calories": "Detailed breakdown of calorie sources (e.g., '200 from x,y ingredients, 150 from z,w ingredients, 150 from a,b ingredients = 500 total')",
+        "protein": "Detailed breakdown of protein (e.g., '25g from meat, 5g from vegetables = 30g total')",
+        "carbs": "Detailed breakdown of carbohydrates (e.g., '20g from rice, 15g from vegetables = 35g total')",
+        "fat": "Detailed breakdown of fat (e.g., '10g from oil, 8g from meat = 18g total')",
+        "water": "Detailed breakdown of water content (e.g., '150ml from vegetables, 100ml from cooking = 250ml total')"
+      },
       "macros": {
         "calories": number,
         "protein": number, 
         "carbs": number,
         "fat": number,
         "water": number
-      },
-      "explanation": {
-        "calories": "Brief explanation of how calories were estimated",
-        "protein": "Brief explanation of protein calculation",
-        "carbs": "Brief explanation of carbohydrate calculation", 
-        "fat": "Brief explanation of fat calculation",
-        "water": "Brief explanation of water content estimation"
       }
     }
     
-    Estimate reasonable values based on typical portions. 
-    For water content, estimate the water content in milliliters (ml) that would be consumed from this food/drink. 
-    Consider both the natural water content of foods and any beverages included.
-    
-    For each macro, provide a brief explanation of how you calculated it, considering portion size, ingredients, and cooking methods.`;
+    CRITICAL REQUIREMENTS:
+    - The explanation must show the mathematical breakdown that leads to the final macro values
+    - The final macro values must be the sum of the components mentioned in the explanation
+    - For water: sum of all water sources mentioned in explanation should equal the final water value
+    - Use realistic portion sizes and typical macro values for ingredients
+    - Consider both the natural water content of foods and any beverages included.
+    - Round all values to reasonable whole numbers
+    `;
 
     if (imageUrl) {
       prompt += ` 
@@ -113,6 +123,8 @@ Analyze the image at: ${imageUrl}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+
+    console.log("AI response:", text);
     
     // Extract JSON from response - handle both markdown code blocks and plain JSON
     let jsonText = text;
