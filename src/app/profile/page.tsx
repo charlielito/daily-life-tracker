@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Calculator, Info } from "lucide-react";
+import { calculateAge } from "@/utils/ageUtils";
 
 interface ProfileFormData {
-  age?: number;
+  birthDate?: string; // HTML date inputs use string format
   gender?: "male" | "female";
   heightCm?: number;
   activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
@@ -32,7 +33,7 @@ export default function ProfilePage() {
     }
   }, [session, status, router]);
 
-  const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<ProfileFormData>();
+  const { register, handleSubmit, reset, setValue, formState: { errors }, watch } = useForm<ProfileFormData>();
 
   const utils = api.useContext();
 
@@ -55,21 +56,32 @@ export default function ProfilePage() {
     },
   });
 
-  // Reset form when profile data loads
+  // Set form values when profile data loads
   useEffect(() => {
     if (userProfile) {
-      reset({
-        age: userProfile.age || undefined,
-        gender: userProfile.gender as "male" | "female" || undefined,
-        heightCm: userProfile.heightCm || undefined,
-        activityLevel: userProfile.activityLevel as ProfileFormData["activityLevel"] || "sedentary",
-      });
+      // Temporarily bypass TypeScript error to see what's actually in the data
+      const profile = userProfile as any;
+      if (profile.birthDate) {
+        // Convert ISO date to YYYY-MM-DD format for HTML date input
+        const date = new Date(profile.birthDate);
+        const formattedDate = date.toISOString().split('T')[0];
+        setValue("birthDate", formattedDate as any);
+      }
+      if (profile.gender) {
+        setValue("gender", profile.gender as "male" | "female");
+      }
+      if (profile.heightCm) {
+        setValue("heightCm", profile.heightCm);
+      }
+      if (profile.activityLevel) {
+        setValue("activityLevel", profile.activityLevel as ProfileFormData["activityLevel"]);
+      }
     }
-  }, [userProfile, reset]);
+  }, [userProfile, setValue]);
 
   const onSubmit = (data: ProfileFormData) => {
     updateProfile.mutate({
-      age: data.age,
+      birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
       gender: data.gender,
       heightCm: data.heightCm,
       activityLevel: data.activityLevel,
@@ -89,16 +101,17 @@ export default function ProfilePage() {
   }
 
   const watchedData = watch();
-  const canCalculateBMR = watchedData.age && watchedData.gender && watchedData.heightCm;
+  const canCalculateBMR = watchedData.birthDate && watchedData.gender && watchedData.heightCm;
 
   // Calculate BMR preview
   let bmrPreview = 0;
   if (canCalculateBMR) {
     const weight = 70; // Default weight for preview
+    const age = watchedData.birthDate ? calculateAge(new Date(watchedData.birthDate)) : 0;
     if (watchedData.gender === "male") {
-      bmrPreview = Math.round(10 * weight + 6.25 * (watchedData.heightCm || 0) - 5 * (watchedData.age || 0) + 5);
+      bmrPreview = Math.round(10 * weight + 6.25 * (watchedData.heightCm || 0) - 5 * age + 5);
     } else {
-      bmrPreview = Math.round(10 * weight + 6.25 * (watchedData.heightCm || 0) - 5 * (watchedData.age || 0) - 161);
+      bmrPreview = Math.round(10 * weight + 6.25 * (watchedData.heightCm || 0) - 5 * age - 161);
     }
   }
 
@@ -168,22 +181,15 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Age */}
+              {/* Birth Date */}
               <div>
-                <Label htmlFor="age">Age (years)</Label>
+                <Label htmlFor="birthDate">Date of Birth</Label>
                 <Input
-                  type="number"
-                  min="10"
-                  max="120"
-                  placeholder="25"
-                  {...register("age", { 
-                    min: { value: 10, message: "Age must be at least 10" },
-                    max: { value: 120, message: "Age must be less than 120" },
-                    valueAsNumber: true
-                  })}
+                  type="date"
+                  {...register("birthDate")}
                 />
-                {errors.age && (
-                  <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>
+                {errors.birthDate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>
                 )}
               </div>
 
@@ -290,7 +296,7 @@ export default function ProfilePage() {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Calculator className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Enter your age, gender, and height</p>
+                <p>Enter your birth date, gender, and height</p>
                 <p className="text-sm">to see your calorie calculation preview</p>
               </div>
             )}

@@ -16,6 +16,7 @@ import Image from "next/image";
 import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
+import { calculateAge } from "@/utils/ageUtils";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -322,22 +323,21 @@ export default function DashboardPage() {
       {/* Main Dashboard Content */}
       <div className="space-y-6">
         {/* Profile Setup Prompt */}
-        {userProfile && (!(userProfile as any).age || !(userProfile as any).gender || !(userProfile as any).heightCm) && (
-          <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-yellow-800">
-                <User className="h-6 w-6" />
-                Complete Your Profile for Accurate Calorie Tracking
+        {userProfile && (!(userProfile as any).birthDate || !(userProfile as any).gender || !(userProfile as any).heightCm) && (
+          <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-orange-700 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Complete Your Profile
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-yellow-700 mb-4">
-                Set up your age, gender, height, and activity level to get personalized calorie calculations 
-                including BMR (calories burned at rest) and TDEE (total daily energy expenditure).
+            <CardContent className="pt-0">
+              <p className="text-xs text-orange-600 mb-2">
+                Set up your birth date, gender, height, and activity level to get personalized calorie calculations
               </p>
               <Link href="/profile">
-                <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
-                  Set Up Profile Now
+                <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 text-white">
+                  Complete Profile
                 </Button>
               </Link>
             </CardContent>
@@ -440,10 +440,10 @@ export default function DashboardPage() {
             <CardContent className="pt-0 pb-3">
               {isProfileExpanded ? (
                 <div className="space-y-1">
-                  {userProfile.age && (
+                  {userProfile.birthDate && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 text-xs">Age:</span>
-                      <span className="font-medium text-xs">{userProfile.age} years</span>
+                      <span className="font-medium text-xs">{calculateAge(userProfile.birthDate)} years</span>
                     </div>
                   )}
                   {userProfile.gender && (
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                       <span className="font-medium text-xs capitalize">{userProfile.activityLevel.replace(/_/g, ' ')}</span>
                     </div>
                   )}
-                  {(!userProfile.age || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
+                  {(!userProfile.birthDate || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
                     <div className="text-xs text-blue-600 bg-blue-50 p-1.5 rounded mt-1">
                       ⚠️ Complete profile for accurate calculations
                     </div>
