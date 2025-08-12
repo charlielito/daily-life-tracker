@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Part, type InlineDataPart } from "@google/generative-ai";
 import { TRPCError } from "@trpc/server";
 import { env } from "@/env.js";
 import { STRIPE_CONFIG } from "@/lib/stripe";
@@ -7,6 +7,57 @@ import { STRIPE_CONFIG } from "@/lib/stripe";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 const genAI = new GoogleGenerativeAI(env.GOOGLE_AI_API_KEY);
+
+// Helper function to download image from URL and convert to base64
+async function downloadImageAsBase64(imageUrl: string): Promise<string> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.statusText}`);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+    
+    return base64;
+  } catch (error) {
+    console.error("Error downloading image:", error);
+    throw new Error("Failed to process image for AI analysis");
+  }
+}
+
+// Helper function to detect MIME type from image URL
+function getMimeTypeFromUrl(imageUrl: string): string {
+  try {
+    // Extract file extension from URL
+    const url = new URL(imageUrl);
+    const pathname = url.pathname;
+    const extension = pathname.split('.').pop()?.toLowerCase();
+    
+    // Map common extensions to MIME types
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+      case 'heif':
+        return 'image/heic';
+      default:
+        // Default to JPEG for Cloudinary URLs and unknown formats
+        return 'image/jpeg';
+    }
+  } catch (error) {
+    // If URL parsing fails, default to JPEG
+    return 'image/jpeg';
+  }
+}
 
 // Helper function to check if user can perform AI calculation
 async function checkAiUsageLimit(userId: string, db: any) {
@@ -72,16 +123,11 @@ async function calculateMacros(description?: string, imageUrl?: string): Promise
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     let prompt = `Please analyze this food ${description ? `description: "${description}"` : 'image'} and provide macronutrient information in a consistent format. `;
-    if (!description && imageUrl) {
-      prompt += `
-The image is provided at: ${imageUrl}.`;
-    }
-    // Otherwise we are using both description and image
-    else if (description && imageUrl) {
+    
+    if (description && imageUrl) {
       prompt += ` 
 
-IMPORTANT: An image of the food is also provided. Please use both the description AND the visual information from the image to provide more accurate macro calculations. 
-Analyze the image at: ${imageUrl}.`;
+IMPORTANT: An image of the food is also provided. Please use both the description AND the visual information from the image to provide more accurate macro calculations.`;
     }
     if (imageUrl) {
       prompt += `
@@ -105,7 +151,7 @@ Follow this process:
 
 Return a JSON object with the following structure:
 {
-  "description": "${description ? 'Use the provided description above' : 'Generate a detailed description of the food shown in the image'}",
+  "description": "${description ? 'Use the provided description above' : 'Generate a short description of the food shown in the image'}",
   "explanation": {
     "calories": "Detailed breakdown of calorie sources (e.g., '200 from x,y ingredients, 150 from z,w ingredients, 150 from a,b ingredients = 500 total')",
     "protein": "Detailed breakdown of protein (e.g., '25g from meat, 5g from vegetables = 30g total')",
@@ -129,14 +175,54 @@ CRITICAL REQUIREMENTS:
 - Use realistic portion sizes and typical macro values for ingredients
 - Consider both the natural water content of foods and any beverages included.
 - Round all values to reasonable whole numbers
-- If no description was provided, generate a detailed description of what you see in the image`;
+- If no description was provided, generate a short description of what you see in the image`;
 
-    console.log("AI prompt:", prompt);
-    const result = await model.generateContent(prompt);
+    // console.log("AI prompt:", prompt);
+    
+    // Prepare content parts for the model
+    const contentParts: Part[] = [{ text: prompt }];
+    
+    // If image is provided, add it as a MediaPart
+    if (imageUrl) {
+      try {
+        // Download image from Cloudinary and convert to base64
+        // Gemini requires base64 encoded image data, not URLs
+        // console.log("Downloading image for AI analysis:", imageUrl);
+        const base64Image = await downloadImageAsBase64(imageUrl);
+        
+        // Validate base64 data
+        if (!base64Image || base64Image.length === 0) {
+          throw new Error("Failed to convert image to base64");
+        }
+        
+        // Check if base64 data is too large (Gemini has limits)
+        const maxBase64Size = 20 * 1024 * 1024; // 20MB limit
+        if (base64Image.length > maxBase64Size) {
+          throw new Error("Image too large for AI analysis. Please use a smaller image.");
+        }
+        
+        // console.log(`Image converted to base64, size: ${base64Image.length} characters`);
+        
+        // Create InlineDataPart from the base64 image data
+        const imagePart: InlineDataPart = {
+          inlineData: {
+            mimeType: getMimeTypeFromUrl(imageUrl), // Detect MIME type from URL
+            data: base64Image
+          }
+        };
+        contentParts.push(imagePart);
+        // console.log("Image successfully added to AI request");
+      } catch (error) {
+        console.error("Failed to create image part:", error);
+        throw new Error("Failed to create image part");
+      }
+    }
+
+    const result = await model.generateContent(contentParts);
     const response = await result.response;
     const text = response.text();
 
-    console.log("AI response:", text);
+    // console.log("AI response:", text);
     
     // Extract JSON from response - handle both markdown code blocks and plain JSON
     let jsonText = text;
