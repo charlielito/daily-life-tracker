@@ -82,9 +82,13 @@ export function EditEntryModal({
     const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
 
     if (type === "food") {
+      // If no image is provided, description is required
+      // If image is provided, description can be empty (AI will generate it)
+      const description = data.description?.trim() || undefined;
+      
       onSave({
         id: entry.id,
-        description: data.description,
+        description: description,
         localDateTime: localDateTime,
         imageUrl: uploadedImageUrl || null, // Explicitly pass null when undefined
       });
@@ -190,14 +194,23 @@ export function EditEntryModal({
             {type === "food" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Food Description</Label>
+                  <Label htmlFor="description">
+                    Food Description {uploadedImageUrl && <span className="text-gray-500 font-normal">(Optional when photo is provided)</span>}
+                  </Label>
                   <Textarea
                     id="description"
-                    placeholder="Describe what you ate..."
-                    {...register("description", { required: "Description is required" })}
+                    placeholder={uploadedImageUrl ? "Optional: Add details about your meal, or let AI analyze the photo" : "Describe what you ate..."}
+                    {...register("description", { 
+                      required: !uploadedImageUrl ? "Description is required or upload a photo" : false 
+                    })}
                   />
                   {errors.description && (
                     <p className="text-red-500 text-sm">{(errors.description as any)?.message}</p>
+                  )}
+                  {uploadedImageUrl && (
+                    <p className="text-xs text-gray-500">
+                      💡 With a photo, AI can analyze your meal automatically. Adding a description helps improve accuracy.
+                    </p>
                   )}
                 </div>
 
@@ -205,7 +218,7 @@ export function EditEntryModal({
                   onImageUpload={handleImageUpload}
                   onImageRemove={handleImageRemove}
                   currentImage={uploadedImageUrl}
-                  label="Food Photo (Optional)"
+                  label="Food Photo "
                   disabled={isLoading}
                 />
               </>

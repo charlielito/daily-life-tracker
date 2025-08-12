@@ -20,7 +20,7 @@ import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { Info } from "lucide-react";
 
 interface FoodFormData {
-  description: string;
+  description?: string;
   localDateTime: string; // Single field for datetime-local input
 }
 
@@ -109,8 +109,12 @@ export default function FoodPage() {
     // Convert local time to UTC for storage using shared utility
     const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
     
+    // If no image is provided, description is required
+    // If image is provided, description can be empty (AI will generate it)
+    const description = data.description?.trim() || undefined;
+    
     createMacroEntry.mutate({
-      description: data.description,
+      description: description,
       localDateTime: localDateTime, // Use the converted date
       imageUrl: uploadedImageUrl,
     });
@@ -191,7 +195,7 @@ export default function FoodPage() {
           <CardHeader>
             <CardTitle>Add New Meal</CardTitle>
             <CardDescription>
-              Describe your meal and our AI will calculate the macros for you
+              Describe your meal or take a photo, and our AI will calculate the macros for you
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -259,14 +263,23 @@ export default function FoodPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Meal Description</Label>
+                <Label htmlFor="description">
+                  Meal Description {uploadedImageUrl && <span className="text-gray-500 font-normal">(Optional when photo is provided)</span>}
+                </Label>
                 <Textarea
                   id="description"
-                  placeholder="e.g., Grilled chicken breast with rice and broccoli, medium portion"
-                  {...register("description", { required: "Please describe your meal" })}
+                  placeholder={uploadedImageUrl ? "Optional: Add details about your meal, or let AI analyze the photo" : "e.g., Grilled chicken breast with rice and broccoli, medium portion"}
+                  {...register("description", { 
+                    required: !uploadedImageUrl ? "Please describe your meal or upload a photo" : false 
+                  })}
                 />
                 {errors.description && (
                   <p className="text-red-500 text-sm">{errors.description.message}</p>
+                )}
+                {uploadedImageUrl && (
+                  <p className="text-xs text-gray-500">
+                    💡 With a photo, AI can analyze your meal automatically. Adding a description helps improve accuracy.
+                  </p>
                 )}
               </div>
 
@@ -275,7 +288,7 @@ export default function FoodPage() {
                 onImageUpload={handleImageUpload}
                 onImageRemove={handleImageRemove}
                 currentImage={uploadedImageUrl}
-                label="Food Photo (Optional)"
+                label="Food Photo "
                 disabled={createMacroEntry.isLoading}
               />
 
