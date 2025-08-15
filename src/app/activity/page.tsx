@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
@@ -29,7 +29,13 @@ interface ActivityFormData {
 export default function ActivityPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const searchParams = useSearchParams();
+  
+  // Get date from URL parameter or default to today
+  const dateParam = searchParams.get('date');
+  const initialDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
+  
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -45,7 +51,7 @@ export default function ActivityPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<ActivityFormData>({
     defaultValues: {
-      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
+      localDateTime: dateParam ? format(initialDate, "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       intensity: "moderate",
       activityType: "Weight Training",
     }

@@ -583,7 +583,7 @@ export default function DashboardPage() {
                 {isSelectedDateToday ? "entries today" : `entries on ${format(selectedDate, "MMM d")}`}
               </p>
               <div className="mt-3">
-                <Link href="/food">
+                <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
                     🍽️ Log Meal
                   </Button>
@@ -602,7 +602,7 @@ export default function DashboardPage() {
                 {isSelectedDateToday ? "logs today" : `logs on ${format(selectedDate, "MMM d")}`}
               </p>
               <div className="mt-3">
-                <Link href="/health">
+                <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                     🏥 Log Health
                   </Button>
@@ -621,7 +621,7 @@ export default function DashboardPage() {
                 {isSelectedDateToday ? "exercises today" : `exercises on ${format(selectedDate, "MMM d")}`}
               </p>
               <div className="mt-3">
-                <Link href="/activity">
+                <Link href={isSelectedDateToday ? "/activity" : `/activity?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white">
                     🏃‍♂️ Log Activity
                   </Button>
@@ -657,7 +657,7 @@ export default function DashboardPage() {
                     Add today's weight
                   </Button>
                 )}
-                <Link href="/weight">
+                <Link href={isSelectedDateToday ? "/weight" : `/weight?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -678,7 +678,7 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recent Meals</CardTitle>
-                <Link href="/food">
+                <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button variant="ghost" size="sm">View All</Button>
                 </Link>
               </div>
@@ -692,7 +692,7 @@ export default function DashboardPage() {
                   <p className="text-gray-500 mb-2">
                     {isSelectedDateToday ? "No meals logged today" : `No meals logged on ${format(selectedDate, "MMM d")}`}
                   </p>
-                  <Link href="/food">
+                  <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                     <Button size="sm">Log Your First Meal</Button>
                   </Link>
                 </div>
@@ -794,7 +794,7 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recent Health Entries</CardTitle>
-                <Link href="/health">
+                <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button variant="ghost" size="sm">View All</Button>
                 </Link>
               </div>
@@ -808,7 +808,7 @@ export default function DashboardPage() {
                   <p className="text-gray-500 mb-2">
                     {isSelectedDateToday ? "No health entries today" : `No health entries on ${format(selectedDate, "MMM d")}`}
                   </p>
-                  <Link href="/health">
+                  <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                     <Button size="sm" variant="secondary">Log First Entry</Button>
                   </Link>
                 </div>

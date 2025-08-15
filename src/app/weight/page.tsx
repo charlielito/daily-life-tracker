@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,7 +163,13 @@ function WeightEditModal({
 export default function WeightPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const searchParams = useSearchParams();
+  
+  // Get date from URL parameter or default to today
+  const dateParam = searchParams.get('date');
+  const initialDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
+  
+  const [selectedMonth, setSelectedMonth] = useState(startOfMonth(initialDate));
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [imagePreviewModal, setImagePreviewModal] = useState<{

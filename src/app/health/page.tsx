@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
@@ -42,7 +42,13 @@ const COMMON_COLORS = [
 export default function HealthPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const searchParams = useSearchParams();
+  
+  // Get date from URL parameter or default to today
+  const dateParam = searchParams.get('date');
+  const initialDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
+  
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const [editingEntry, setEditingEntry] = useState<any>(null);
@@ -59,7 +65,7 @@ export default function HealthPage() {
 
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<HealthFormData>({
     defaultValues: {
-      localDateTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"), // Use datetime-local format
+      localDateTime: dateParam ? format(initialDate, "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       consistency: "4",
       color: "Brown",
       painLevel: 0,
