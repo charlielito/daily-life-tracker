@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
-import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { format, addDays, subDays } from "date-fns";
 import Image from "next/image";
-import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { calculateAge } from "@/utils/ageUtils";
@@ -21,20 +22,45 @@ import { calculateAge } from "@/utils/ageUtils";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   
-  // Ensure today is properly normalized to start of day in local timezone
-  const [today] = useState(() => {
+  // Date selection state - starts with today
+  const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
     // Create a date that represents today in local time, normalized to start of day
-    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return todayLocal;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
+
+  // Helper to get today for comparison
+  const [today] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
   
   const [showWeightPrompt, setShowWeightPrompt] = useState(false);
+
+  // Date navigation functions
+  const goToPreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1));
+  };
+
+  const goToNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1));
+  };
+
+  const goToToday = () => {
+    setSelectedDate(today);
+  };
+
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    setSelectedDate(newDate);
+  };
+
+  // Check if selected date is today
+  const isSelectedDateToday = selectedDate.getTime() === today.getTime();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -53,24 +79,24 @@ export default function DashboardPage() {
 
   // Fetch today's data
   const { data: todayMacros = [], isLoading: macrosLoading } = api.macros.getToday.useQuery(
-    { date: today },
+    { date: selectedDate },
     { enabled: !!session }
   );
 
   const { data: todayIntestinal = [], isLoading: intestinalLoading } = api.intestinal.getToday.useQuery(
-    { date: today },
+    { date: selectedDate },
     { enabled: !!session }
   );
 
   // Fetch today's activity data
   const { data: todayActivities = [], isLoading: activitiesLoading } = api.activity.getToday.useQuery(
-    { date: today },
+    { date: selectedDate },
     { enabled: !!session }
   );
 
   // Fetch daily calorie balance
   const { data: calorieBalance } = api.activity.getDailyCalorieBalance.useQuery(
-    { date: today },
+    { date: selectedDate },
     { enabled: !!session }
   );
 
@@ -82,7 +108,7 @@ export default function DashboardPage() {
 
   // Fetch today's weight
   const { data: todayWeight, isLoading: weightLoading } = api.weight.getByDate.useQuery(
-    { localDate: convertLocalToUTCForStorage(today) },
+    { localDate: convertLocalToUTCForStorage(selectedDate) },
     { enabled: !!session }
   );
 
@@ -112,16 +138,16 @@ export default function DashboardPage() {
     const currentDate = new Date();
     const todayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
         
-    if (session && !weightLoading && !todayWeight && today.getTime() === todayLocal.getTime()) {
+    if (session && !weightLoading && !todayWeight && selectedDate.getTime() === todayLocal.getTime()) {
       // Show prompt after a short delay to let the dashboard load first
       const timer = setTimeout(() => setShowWeightPrompt(true), 1000);
       return () => clearTimeout(timer);
     }
-  }, [session, weightLoading, todayWeight, today]);
+  }, [session, weightLoading, todayWeight, selectedDate]);
 
   const handleSaveWeight = (weight: number, imageUrl?: string | null) => {
     upsertWeight.mutate({
-      localDate: convertLocalToUTCForStorage(today),
+      localDate: convertLocalToUTCForStorage(selectedDate),
       weight,
       imageUrl: imageUrl || undefined, // Convert null to undefined for API
     });
@@ -157,7 +183,7 @@ export default function DashboardPage() {
               Welcome back, {session.user?.name || session.user?.email}!
             </h1>
             <p className="text-gray-600 mt-2">
-              {format(today, "EEEE, MMMM do, yyyy")}
+              {format(selectedDate, "EEEE, MMMM do, yyyy")}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -254,7 +280,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="text-gray-600">
-              {format(today, "EEEE, MMMM d, yyyy")} • Track your daily health
+              {format(selectedDate, "EEEE, MMMM d, yyyy")} • Track your daily health
             </p>
           </div>
           <div className="flex gap-2">
@@ -319,6 +345,39 @@ export default function DashboardPage() {
           </Card>
         )}
       </div>
+
+      {/* Date Navigation */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={goToPreviousDay}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-600" />
+                <Input
+                  type="date"
+                  value={format(selectedDate, "yyyy-MM-dd")}
+                  onChange={handleDateInputChange}
+                  className="w-[160px]"
+                />
+              </div>
+              
+              {!isSelectedDateToday && (
+                <Button variant="ghost" size="sm" onClick={goToToday}>
+                  Today
+                </Button>
+              )}
+            </div>
+            
+            <Button variant="outline" onClick={goToNextDay}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Dashboard Content */}
       <div className="space-y-6">
@@ -483,7 +542,7 @@ export default function DashboardPage() {
         <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="flex items-center gap-2 text-emerald-800 text-sm">
-              🍽️ Today's Total Macros
+              🍽️ {isSelectedDateToday ? "Today's" : format(selectedDate, "MMM d")} Total Macros
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 pb-3">
@@ -520,7 +579,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-green-800">{todayMacros.length}</div>
-              <p className="text-xs text-green-600 mt-1">entries today</p>
+              <p className="text-xs text-green-600 mt-1">
+                {isSelectedDateToday ? "entries today" : `entries on ${format(selectedDate, "MMM d")}`}
+              </p>
               <div className="mt-3">
                 <Link href="/food">
                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
@@ -537,7 +598,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-purple-800">{todayIntestinal.length}</div>
-              <p className="text-xs text-purple-600 mt-1">logs today</p>
+              <p className="text-xs text-purple-600 mt-1">
+                {isSelectedDateToday ? "logs today" : `logs on ${format(selectedDate, "MMM d")}`}
+              </p>
               <div className="mt-3">
                 <Link href="/health">
                   <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white">
@@ -554,7 +617,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-amber-800">{todayActivities.length}</div>
-              <p className="text-xs text-amber-600 mt-1">exercises today</p>
+              <p className="text-xs text-amber-600 mt-1">
+                {isSelectedDateToday ? "exercises today" : `exercises on ${format(selectedDate, "MMM d")}`}
+              </p>
               <div className="mt-3">
                 <Link href="/activity">
                   <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white">
@@ -577,12 +642,12 @@ export default function DashboardPage() {
                 {isLatestWeight 
                   ? `from ${format(convertUTCToLocalDisplay(new Date(latestWeight!.localDate)), "MMM d")}`
                   : todayWeight 
-                    ? "today's weight"
+                    ? isSelectedDateToday ? "today's weight" : `weight on ${format(selectedDate, "MMM d")}`
                     : "no data"
                 }
               </p>
               <div className="flex flex-col gap-1 mt-2">
-                {!todayWeight && (
+                {!todayWeight && isSelectedDateToday && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -624,7 +689,9 @@ export default function DashboardPage() {
                 <p className="text-gray-500">Loading...</p>
               ) : todayMacros.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-gray-500 mb-2">No meals logged today</p>
+                  <p className="text-gray-500 mb-2">
+                    {isSelectedDateToday ? "No meals logged today" : `No meals logged on ${format(selectedDate, "MMM d")}`}
+                  </p>
                   <Link href="/food">
                     <Button size="sm">Log Your First Meal</Button>
                   </Link>
@@ -738,7 +805,9 @@ export default function DashboardPage() {
                 <p className="text-gray-500">Loading...</p>
               ) : todayIntestinal.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-gray-500 mb-2">No health entries today</p>
+                  <p className="text-gray-500 mb-2">
+                    {isSelectedDateToday ? "No health entries today" : `No health entries on ${format(selectedDate, "MMM d")}`}
+                  </p>
                   <Link href="/health">
                     <Button size="sm" variant="secondary">Log First Entry</Button>
                   </Link>
@@ -796,7 +865,7 @@ export default function DashboardPage() {
         onClose={() => setShowWeightPrompt(false)}
         onSave={handleSaveWeight}
         isLoading={upsertWeight.isLoading}
-        date={today}
+        date={selectedDate}
       />
       
       {/* Macro Details Modal */}
