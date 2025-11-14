@@ -122,7 +122,7 @@ async function calculateMacros(description?: string, imageUrl?: string): Promise
   try {
     const model = genAI.getGenerativeModel(
       { 
-        model: "gemini-2.0-flash-lite",
+        model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.3,
         },
