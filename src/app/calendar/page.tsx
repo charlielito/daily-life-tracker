@@ -45,6 +45,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCalories, setShowCalories] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -178,9 +179,20 @@ export default function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
-            </Button>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showCalories}
+                  onChange={(e) => setShowCalories(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Show calories</span>
+              </label>
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Today
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -246,8 +258,8 @@ export default function CalendarPage() {
                             <span className="text-xs text-purple-600">{dayData.weightCount}</span>
                           </div>
                         )}
-                        {/* Calories info - show if available and space permits */}
-                        {(dayData.totalCalories || dayData.totalCaloriesBurned) && (
+                        {/* Calories info - show if checkbox is enabled and data is available */}
+                        {showCalories && (dayData.totalCalories || dayData.totalCaloriesBurned) && (
                           <div className="mt-1 pt-1 border-t border-gray-200 space-y-0.5">
                             {dayData.totalCalories && (
                               <div className="text-xs text-gray-600">

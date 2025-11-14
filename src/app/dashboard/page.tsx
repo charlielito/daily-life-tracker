@@ -257,10 +257,10 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header with Sign Out */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Welcome back, {session.user?.name || session.user?.email?.split('@')[0]}! 👋
               </h1>
               {subscriptionStatus && (
@@ -279,24 +279,26 @@ export default function DashboardPage() {
                 </Badge>
               )}
             </div>
-            <p className="text-gray-600">
+            <p className="text-sm md:text-base text-gray-600">
               {format(selectedDate, "EEEE, MMMM d, yyyy")} • Track your daily health
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href="/calendar">
               <Button variant="outline" size="sm" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Calendar
+                <span className="hidden sm:inline">Calendar</span>
               </Button>
             </Link>
             <Link href="/subscription">
               <Button variant="outline" size="sm">
-                {isUnlimited ? "Manage Plan" : "Upgrade"}
+                <span className="hidden sm:inline">{isUnlimited ? "Manage Plan" : "Upgrade"}</span>
+                <span className="sm:hidden">{isUnlimited ? "Plan" : "Upgrade"}</span>
               </Button>
             </Link>
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => signOut({ callbackUrl: "/" })}
             >
               Sign Out
