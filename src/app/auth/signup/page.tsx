@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
+import { LocalizedLink } from "@/components/ui/localized-link";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface SignUpFormData {
   name: string;
@@ -19,7 +21,8 @@ interface SignUpFormData {
 }
 
 export default function SignUpPage() {
-  const router = useRouter();
+  const router = useLocalizedRouter();
+  const { t } = useTranslations("auth");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export default function SignUpPage() {
       if (signInResult?.ok) {
         router.push("/dashboard");
       } else {
-        setError("Registration successful, but failed to sign in. Please try signing in manually.");
+        setError(t("registrationSuccessful"));
       }
     },
     onError: (error) => {
@@ -51,7 +54,7 @@ export default function SignUpPage() {
     setError(null);
 
     if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("passwordsDoNotMatch"));
       setIsLoading(false);
       return;
     }
@@ -74,7 +77,7 @@ export default function SignUpPage() {
         callbackUrl: "/dashboard",
       });
     } catch (error) {
-      setError("Failed to sign up with Google. Please try again.");
+      setError(t("failedGoogleSignUp"));
       setIsGoogleLoading(false);
     }
   };
@@ -83,9 +86,12 @@ export default function SignUpPage() {
     <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <div className="flex justify-end mb-2">
+            <LanguageSwitcher />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">{t("createAccount")}</CardTitle>
           <CardDescription className="text-center">
-            Join us today and start tracking your health journey!
+            {t("joinUsToday")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -114,7 +120,7 @@ export default function SignUpPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {isGoogleLoading ? "Creating account..." : "Continue with Google"}
+            {isGoogleLoading ? t("creatingAccount") : t("continueWithGoogle")}
           </Button>
 
           <div className="relative">
@@ -123,7 +129,7 @@ export default function SignUpPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or continue with email
+                {t("orContinueWithEmail")}
               </span>
             </div>
           </div>
@@ -137,16 +143,16 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t("fullName")}</Label>
               <Input
                 id="name"
                 type="text"
                 placeholder="Your full name"
                 {...register("name", { 
-                  required: "Name is required",
+                  required: t("nameRequired"),
                   minLength: {
                     value: 2,
-                    message: "Name must be at least 2 characters"
+                    message: t("nameMinLength")
                   }
                 })}
               />
@@ -156,16 +162,16 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="your@email.com"
                 {...register("email", { 
-                  required: "Email is required",
+                  required: t("emailRequired"),
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: "Please enter a valid email"
+                    message: t("validEmail")
                   }
                 })}
               />
@@ -175,16 +181,16 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Create a password"
                 {...register("password", { 
-                  required: "Password is required",
+                  required: t("passwordRequired"),
                   minLength: {
                     value: 6,
-                    message: "Password must be at least 6 characters"
+                    message: t("passwordMinLength")
                   }
                 })}
               />
@@ -194,15 +200,15 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
                 {...register("confirmPassword", { 
-                  required: "Please confirm your password",
+                  required: t("confirmPasswordRequired"),
                   validate: (value) => 
-                    value === watch("password") || "Passwords do not match"
+                    value === watch("password") || t("passwordsDoNotMatch")
                 })}
               />
               {errors.confirmPassword && (
@@ -215,15 +221,15 @@ export default function SignUpPage() {
               className="w-full" 
               disabled={isLoading || isGoogleLoading || createUserMutation.isLoading}
             >
-              {isLoading || createUserMutation.isLoading ? "Creating account..." : "Create Account"}
+              {isLoading || createUserMutation.isLoading ? t("creatingAccount") : t("createAccount")}
             </Button>
           </form>
 
           <div className="text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
-            <Link href="/auth/signin" className="text-blue-600 hover:underline">
-              Sign in
-            </Link>
+            <span className="text-gray-600">{t("alreadyHaveAccount")} </span>
+            <LocalizedLink href="/auth/signin" className="text-blue-600 hover:underline">
+              {t("signIn")}
+            </LocalizedLink>
           </div>
         </CardContent>
       </Card>

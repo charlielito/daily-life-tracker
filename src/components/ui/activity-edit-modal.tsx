@@ -9,7 +9,10 @@ import { Textarea } from "./textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
 
 interface ActivityEditModalProps {
   isOpen: boolean;
@@ -40,6 +43,9 @@ export function ActivityEditModal({
   activityTypes,
   isLoading = false,
 }: ActivityEditModalProps) {
+  const { t } = useTranslations("activity");
+  const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<ActivityFormData>();
@@ -93,7 +99,7 @@ export function ActivityEditModal({
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-2">
             <Edit className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">Edit Activity</h2>
+            <h2 className="text-lg font-semibold">{t("editActivity")}</h2>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -107,10 +113,10 @@ export function ActivityEditModal({
               {/* Date and Time */}
               <div>
                 <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  When did you do this activity?
+                  {t("whenDidYouDoActivity")}
                 </label>
                 <input
-                  {...register("localDateTime", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: t("dateAndTimeRequired") })}
                   type="datetime-local"
                   id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -122,12 +128,12 @@ export function ActivityEditModal({
 
               {/* Activity Type */}
               <div>
-                <Label htmlFor="activityType">Activity Type</Label>
+                <Label htmlFor="activityType">{t("activityType")}</Label>
                 <select
-                  {...register("activityType", { required: "Activity type is required" })}
+                  {...register("activityType", { required: t("activityTypeRequired") })}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
-                  <option value="">Select activity type</option>
+                  <option value="">{t("selectActivityType")}</option>
                   {activityTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
@@ -141,10 +147,10 @@ export function ActivityEditModal({
 
               {/* Description */}
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t("description")}</Label>
                 <Input
-                  placeholder="e.g., Morning run around the park"
-                  {...register("description", { required: "Description is required" })}
+                  placeholder={t("descriptionPlaceholder")}
+                  {...register("description", { required: t("descriptionRequired") })}
                 />
                 {errors.description && (
                   <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
@@ -154,13 +160,13 @@ export function ActivityEditModal({
               {/* Duration and Intensity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="duration">Duration (minutes)</Label>
+                  <Label htmlFor="duration">{t("duration")}</Label>
                   <Input
                     type="number"
                     min="1"
                     {...register("duration", { 
-                      required: "Duration is required",
-                      min: { value: 1, message: "Duration must be at least 1 minute" },
+                      required: t("durationRequired"),
+                      min: { value: 1, message: t("durationMin") },
                       valueAsNumber: true
                     })}
                   />
@@ -169,15 +175,15 @@ export function ActivityEditModal({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="intensity">Intensity</Label>
+                  <Label htmlFor="intensity">{t("intensity")}</Label>
                   <select
-                    {...register("intensity", { required: "Intensity is required" })}
+                    {...register("intensity", { required: t("intensityRequired") })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <option value="">Select intensity</option>
-                    <option value="low">Low</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="high">High</option>
+                    <option value="">{t("selectIntensity")}</option>
+                    <option value="low">{t("low")}</option>
+                    <option value="moderate">{t("moderate")}</option>
+                    <option value="high">{t("high")}</option>
                   </select>
                   {errors.intensity && (
                     <p className="text-red-500 text-sm mt-1">{errors.intensity.message}</p>
@@ -187,22 +193,22 @@ export function ActivityEditModal({
 
               {/* Notes */}
               <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
+                <Label htmlFor="notes">{t("notes")}</Label>
                 <Textarea
-                  placeholder="Any additional notes about your activity..."
+                  placeholder={t("notesPlaceholder")}
                   {...register("notes")}
                 />
               </div>
 
               {/* Calories Burned */}
               <div>
-                <Label htmlFor="caloriesBurned">Calories Burned (optional)</Label>
+                <Label htmlFor="caloriesBurned">{t("caloriesBurned")}</Label>
                 <Input
                   type="number"
                   min="1"
-                  placeholder="e.g., 300"
+                  placeholder={t("caloriesBurnedPlaceholder")}
                   {...register("caloriesBurned", { 
-                    min: { value: 1, message: "Calories must be at least 1" },
+                    min: { value: 1, message: t("caloriesBurnedMin") },
                     valueAsNumber: true
                   })}
                 />
@@ -210,7 +216,7 @@ export function ActivityEditModal({
                   <p className="text-red-500 text-sm mt-1">{errors.caloriesBurned.message}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter the calories burned from your fitness tracker or watch for more accuracy
+                  {t("caloriesBurnedHint")}
                 </p>
               </div>
 
@@ -221,7 +227,7 @@ export function ActivityEditModal({
                   className="flex-1"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Saving..." : "Save Changes"}
+                  {isLoading ? tCommon("saving") : tCommon("saveChanges")}
                 </Button>
                 <Button
                   type="button"
@@ -238,15 +244,15 @@ export function ActivityEditModal({
             <div className="text-center py-6">
               <div className="mb-4">
                 <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Activity</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("deleteActivity")}</h3>
                 <p className="text-gray-600">
-                  Are you sure you want to delete this activity? This action cannot be undone.
+                  {t("deleteActivityConfirmation")}
                 </p>
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium">{entry.activityType}</p>
                   <p className="text-sm text-gray-600">{entry.description}</p>
                   <p className="text-xs text-gray-500">
-                    {format(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a")} • {entry.duration} minutes
+                    {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a", { locale: dateLocale })} • {entry.duration} {t("min")}
                   </p>
                 </div>
               </div>
@@ -257,7 +263,7 @@ export function ActivityEditModal({
                   className="flex-1"
                   disabled={isLoading}
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
                 <Button
                   variant="destructive"
@@ -265,7 +271,7 @@ export function ActivityEditModal({
                   className="flex-1"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Deleting..." : "Delete Activity"}
+                  {isLoading ? t("deleting") : t("deleteActivity")}
                 </Button>
               </div>
             </div>

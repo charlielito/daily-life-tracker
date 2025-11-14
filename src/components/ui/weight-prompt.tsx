@@ -7,6 +7,10 @@ import { Input } from "./input";
 import { Label } from "./label";
 import { ImageUpload } from "./image-upload";
 import { X, Scale } from "lucide-react";
+import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { format } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 
 interface WeightPromptProps {
   isOpen: boolean;
@@ -27,6 +31,8 @@ export function WeightPrompt({
   isLoading = false,
   date,
 }: WeightPromptProps) {
+  const { t } = useTranslations("weight");
+  const dateLocale = useDateLocale();
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<WeightFormData>();
 
@@ -58,7 +64,7 @@ export function WeightPrompt({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Scale className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">Daily Weight</h2>
+            <h2 className="text-lg font-semibold">{t("dailyWeight")}</h2>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -69,19 +75,19 @@ export function WeightPrompt({
         <div className="mb-4">
           <p className="text-gray-600 text-sm mb-2">
             {isToday 
-              ? "Let's track your weight for today! This helps monitor your health progress."
-              : `Enter your weight for ${date.toLocaleDateString()}`
+              ? t("trackWeightToday")
+              : t("enterWeightForDate", { date: formatDate(date, "MMM d, yyyy", { locale: dateLocale }) })
             }
           </p>
           <p className="text-gray-500 text-xs">
-            Weight is tracked once per day and helps with health correlation analysis.
+            {t("weightTrackingInfo")}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="weight">Weight (kg)</Label>
+            <Label htmlFor="weight">{t("weightKg")}</Label>
             <Input
               id="weight"
               type="number"
@@ -90,9 +96,9 @@ export function WeightPrompt({
               max="300"
               placeholder="e.g., 70.5"
               {...register("weight", { 
-                required: "Please enter your weight",
-                min: { value: 20, message: "Weight must be at least 20kg" },
-                max: { value: 300, message: "Weight must be less than 300kg" }
+                required: t("weightRequired"),
+                min: { value: 20, message: t("weightMin") },
+                max: { value: 300, message: t("weightMax") }
               })}
               autoFocus
             />
@@ -106,7 +112,7 @@ export function WeightPrompt({
             onImageUpload={handleImageUpload}
             onImageRemove={handleImageRemove}
             currentImage={uploadedImageUrl}
-            label="Weight Photo (Optional)"
+            label={t("weightPhoto")}
             disabled={isLoading}
           />
 
@@ -117,7 +123,7 @@ export function WeightPrompt({
               className="flex-1" 
               disabled={isLoading}
             >
-              {isLoading ? "Saving..." : "Save Weight"}
+              {isLoading ? t("saving") : t("saveWeight")}
             </Button>
             
             <Button
@@ -126,7 +132,7 @@ export function WeightPrompt({
               onClick={onClose}
               disabled={isLoading}
             >
-              Skip for now
+              {t("skipForNow")}
             </Button>
           </div>
         </form>
@@ -134,7 +140,7 @@ export function WeightPrompt({
         {/* Help text */}
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-blue-700 text-xs">
-            💡 <strong>Tip:</strong> Regular weight tracking helps identify patterns between your diet, health, and weight changes over time.
+            {t("weightTrackingTip")}
           </p>
         </div>
       </div>

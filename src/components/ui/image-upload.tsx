@@ -6,6 +6,7 @@ import { Input } from "./input";
 import { Label } from "./label";
 import { Camera, Upload, X, ImageIcon } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "@/utils/useTranslations";
 
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void;
@@ -19,13 +20,16 @@ export function ImageUpload({
   onImageUpload,
   onImageRemove,
   currentImage,
-  label = "Add Photo",
+  label,
   disabled = false,
 }: ImageUploadProps) {
+  const { t } = useTranslations("common");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  
+  const displayLabel = label || t("addPhoto");
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
@@ -44,7 +48,7 @@ export function ImageUpload({
 
       if (!response.ok) {
         // Parse specific error messages from the API
-        let errorMessage = "Upload failed";
+        let errorMessage = t("uploadFailed");
         
         if (data.error) {
           errorMessage = data.error;
@@ -52,25 +56,25 @@ export function ImageUpload({
           // Handle different HTTP status codes
           switch (response.status) {
             case 401:
-              errorMessage = "Please sign in to upload images";
+              errorMessage = t("signInToUpload");
               break;
             case 403:
-              errorMessage = "Upload limit reached. Please upgrade your plan to continue.";
+              errorMessage = t("uploadLimitReached");
               break;
             case 400:
-              errorMessage = "Invalid file. Please check the file format and size.";
+              errorMessage = t("invalidFile");
               break;
             case 413:
-              errorMessage = "File too large. Please select a smaller image.";
+              errorMessage = t("fileTooLarge");
               break;
             case 408:
-              errorMessage = "Upload timed out. Please try again with a smaller image.";
+              errorMessage = t("uploadTimedOut");
               break;
             case 500:
-              errorMessage = "Server error. Please try again later.";
+              errorMessage = t("serverError");
               break;
             default:
-              errorMessage = `Upload failed (${response.status}): ${response.statusText}`;
+              errorMessage = t("uploadFailedWithStatus", { status: response.status.toString(), statusText: response.statusText });
           }
         }
         
@@ -82,7 +86,7 @@ export function ImageUpload({
       console.error("Upload error:", error);
       
       // Display the specific error message
-      const errorMessage = error instanceof Error ? error.message : "Failed to upload image. Please try again.";
+      const errorMessage = error instanceof Error ? error.message : t("failedToUpload");
       setError(errorMessage);
     } finally {
       setIsUploading(false);
@@ -94,13 +98,13 @@ export function ImageUpload({
     if (file) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        setError("Please select an image file");
+        setError(t("selectImageFile"));
         return;
       }
 
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        setError("File size must be less than 10MB");
+        setError(t("fileSizeLimit"));
         return;
       }
 
@@ -126,7 +130,7 @@ export function ImageUpload({
 
   return (
     <div className="space-y-3">
-      <Label>{label}</Label>
+      <Label>{displayLabel}</Label>
       
       {/* Current Image Display */}
       {currentImage && (
@@ -134,7 +138,7 @@ export function ImageUpload({
           <div className="relative w-48 h-36 rounded-lg overflow-hidden border border-gray-200">
             <Image
               src={currentImage}
-              alt="Uploaded image"
+              alt={t("uploadedImage")}
               fill
               className="object-cover"
             />
@@ -163,7 +167,7 @@ export function ImageUpload({
             className="flex items-center gap-2"
           >
             <Upload className="h-4 w-4" />
-            {isUploading ? "Uploading..." : "Upload Photo"}
+            {isUploading ? t("uploading") : t("uploadPhoto")}
           </Button>
 
           <Button
@@ -174,7 +178,7 @@ export function ImageUpload({
             className="flex items-center gap-2"
           >
             <Camera className="h-4 w-4" />
-            Camera
+            {t("camera")}
           </Button>
         </div>
       )}
@@ -206,36 +210,36 @@ export function ImageUpload({
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-sm text-red-800 font-medium">Upload Error</p>
+              <p className="text-sm text-red-800 font-medium">{t("uploadError")}</p>
               <p className="text-sm text-red-700 mt-1">{error}</p>
               {error.includes("limit") && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Consider upgrading your plan for unlimited uploads
+                  {t("upgradeForUnlimited")}
                 </p>
               )}
-              {error.includes("sign in") && (
+              {(error.includes("sign in") || error.includes("inicia sesión")) && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Please refresh the page and try again
+                  {t("refreshAndTryAgain")}
                 </p>
               )}
-              {error.includes("timed out") && (
+              {(error.includes("timed out") || error.includes("tiempo agotado")) && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Try selecting a smaller image or using a better internet connection
+                  {t("trySmallerImage")}
                 </p>
               )}
-              {error.includes("too large") && (
+              {(error.includes("too large") || error.includes("demasiado grande")) && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Try selecting a smaller image or reducing the image quality in your camera settings
+                  {t("reduceImageQuality")}
                 </p>
               )}
-              {error.includes("Invalid image") && (
+              {(error.includes("Invalid image") || error.includes("inválido")) && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Try taking a new photo or selecting a different image from your gallery
+                  {t("tryNewPhoto")}
                 </p>
               )}
-              {error.includes("processing failed") && (
+              {(error.includes("processing failed") || error.includes("procesamiento falló")) && (
                 <p className="text-xs text-red-600 mt-2">
-                  💡 Try a different image format (JPEG or PNG) or take a new photo
+                  {t("tryDifferentFormat")}
                 </p>
               )}
             </div>
@@ -246,7 +250,7 @@ export function ImageUpload({
       {/* Help Text */}
       {!currentImage && !error && (
         <p className="text-xs text-gray-500">
-          Upload from device or take a photo with camera. Max file size: 10MB
+          {t("uploadHelpText")}
         </p>
       )}
     </div>

@@ -1,7 +1,10 @@
+"use client";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame, Droplets, Beef, Wheat, Zap } from "lucide-react";
+import { useTranslations } from "@/utils/useTranslations";
 
 interface MacroDetailsModalProps {
   isOpen: boolean;
@@ -46,16 +49,26 @@ export function MacroDetailsModal({
   explanations,
   description,
 }: MacroDetailsModalProps) {
+  const { t } = useTranslations("food");
+  
   if (!macros || !explanations) {
     return null;
   }
+
+  const macroLabels: Record<string, string> = {
+    calories: t("caloriesLabel"),
+    protein: t("proteinLabel"),
+    carbs: t("carbsLabel"),
+    fat: t("fatLabel"),
+    water: t("waterLabel"),
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Macro Calculation Details
+            {t("macroCalculationDetails")}
           </DialogTitle>
           <p className="text-sm text-gray-600 mt-2">{description}</p>
         </DialogHeader>
@@ -75,8 +88,8 @@ export function MacroDetailsModal({
                     <div className="font-bold text-lg">
                       {Math.round(value)}
                     </div>
-                    <div className="text-xs font-medium capitalize">
-                      {key} ({unit})
+                    <div className="text-xs font-medium">
+                      {macroLabels[key] || key} ({unit})
                     </div>
                   </CardContent>
                 </Card>
@@ -86,7 +99,7 @@ export function MacroDetailsModal({
 
           {/* Detailed Explanations */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-lg">How each macro was calculated:</h3>
+            <h3 className="font-semibold text-lg">{t("howEachMacroCalculated")}</h3>
             
             {Object.entries(explanations).map(([key, explanation]) => {
               const Icon = macroIcons[key as keyof typeof macroIcons];
@@ -101,7 +114,7 @@ export function MacroDetailsModal({
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold capitalize">{key}</h4>
+                          <h4 className="font-semibold">{macroLabels[key] || key}</h4>
                           <Badge variant="outline" className="text-xs">
                             {Math.round(macros[key as keyof typeof macros])}
                             {key === "water" ? "ml" : key === "calories" ? "cal" : "g"}
@@ -121,8 +134,7 @@ export function MacroDetailsModal({
           {/* Note */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> These calculations are AI-generated estimates based on typical portion sizes and ingredients. 
-              For precise tracking, consider using a food scale or consulting nutrition labels.
+              {t("macroNote")}
             </p>
           </div>
         </div>

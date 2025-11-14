@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
@@ -18,6 +18,11 @@ import Image from "next/image";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { Info } from "lucide-react";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { formatDate } from "@/utils/formatDate";
 
 interface FoodFormData {
   description?: string;
@@ -26,8 +31,11 @@ interface FoodFormData {
 
 export default function FoodPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslations("food");
+  const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
@@ -152,7 +160,7 @@ export default function FoodPage() {
   if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -183,15 +191,18 @@ export default function FoodPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Food Tracking</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
-              {!isToday && <span className="ml-2 text-amber-600 font-medium">(Past Date)</span>}
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
+              {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            ← Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              {tCommon("backToDashboard")}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -199,9 +210,9 @@ export default function FoodPage() {
         {/* Add New Meal Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Add New Meal</CardTitle>
+            <CardTitle>{t("addNewMeal")}</CardTitle>
             <CardDescription>
-              Describe your meal or take a photo, and our AI will calculate the macros for you
+              {t("addNewMealDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -210,7 +221,7 @@ export default function FoodPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">
                   <p className="text-green-600 text-sm">
-                    <strong>Success!</strong> Your meal has been logged and macros calculated.
+                    <strong>{tCommon("success")}</strong> {t("successMessage")}
                   </p>
                 </div>
               )}
@@ -225,26 +236,26 @@ export default function FoodPage() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-red-800 font-medium">Macro Calculation Error</p>
+                      <p className="text-sm text-red-800 font-medium">{t("macroCalculationError")}</p>
                       <p className="text-sm text-red-700 mt-1">{createMacroEntry.error.message}</p>
                       {createMacroEntry.error.message.includes("limit") && (
                         <p className="text-xs text-red-600 mt-2">
-                          💡 Consider upgrading your plan for unlimited AI calculations
+                          {t("limitReachedHint")}
                         </p>
                       )}
                       {createMacroEntry.error.message.includes("detailed description") && (
                         <p className="text-xs text-red-600 mt-2">
-                          💡 Try adding more details like portion size, cooking method, or ingredients
+                          {t("detailedDescriptionHint")}
                         </p>
                       )}
                       {createMacroEntry.error.message.includes("network") && (
                         <p className="text-xs text-red-600 mt-2">
-                          💡 Check your internet connection and try again
+                          {t("networkHint")}
                         </p>
                       )}
                       {createMacroEntry.error.message.includes("timeout") && (
                         <p className="text-xs text-red-600 mt-2">
-                          💡 Try a shorter, more concise description
+                          {t("timeoutHint")}
                         </p>
                       )}
                     </div>
@@ -253,9 +264,9 @@ export default function FoodPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="localDateTime">Date and Time</Label>
+                <Label htmlFor="localDateTime">{t("dateAndTime")}</Label>
                 <Input
-                  {...register("localDateTime", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: t("dateAndTimeRequired") })}
                   type="datetime-local"
                   id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -264,19 +275,19 @@ export default function FoodPage() {
                   <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  You can log meals for any date and time, not just today
+                  {t("dateAndTimeHint")}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description">
-                  Meal Description {uploadedImageUrl && <span className="text-gray-500 font-normal">(Optional when photo is provided)</span>}
+                  {t("mealDescription")} {uploadedImageUrl && <span className="text-gray-500 font-normal">{t("mealDescriptionOptional")}</span>}
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder={uploadedImageUrl ? "Optional: Add details about your meal, or let AI analyze the photo" : "e.g., Grilled chicken breast with rice and broccoli, medium portion"}
+                  placeholder={uploadedImageUrl ? t("mealDescriptionPlaceholderWithPhoto") : t("mealDescriptionPlaceholder")}
                   {...register("description", { 
-                    required: !uploadedImageUrl ? "Please describe your meal or upload a photo" : false 
+                    required: !uploadedImageUrl ? t("mealDescriptionRequired") : false 
                   })}
                 />
                 {errors.description && (
@@ -284,7 +295,7 @@ export default function FoodPage() {
                 )}
                 {uploadedImageUrl && (
                   <p className="text-xs text-gray-500">
-                    💡 With a photo, AI can analyze your meal automatically. Adding a description helps improve accuracy.
+                    {t("photoHint")}
                   </p>
                 )}
               </div>
@@ -294,7 +305,7 @@ export default function FoodPage() {
                 onImageUpload={handleImageUpload}
                 onImageRemove={handleImageRemove}
                 currentImage={uploadedImageUrl}
-                label="Food Photo "
+                label={t("foodPhoto") + " "}
                 disabled={createMacroEntry.isLoading}
               />
 
@@ -303,7 +314,7 @@ export default function FoodPage() {
                 className="w-full" 
                 disabled={createMacroEntry.isLoading}
               >
-                {createMacroEntry.isLoading ? "Adding meal..." : "Add Meal & Calculate Macros"}
+                {createMacroEntry.isLoading ? t("addingMeal") : t("addMeal")}
               </Button>
             </form>
           </CardContent>
@@ -315,31 +326,31 @@ export default function FoodPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? "Today's" : format(selectedDate, "MMM d")} Macros
+                {isToday ? t("todaysMacros") : t("macrosForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </CardTitle>
-              <CardDescription>Total nutrition from all meals</CardDescription>
+              <CardDescription>{t("totalNutrition")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">{Math.round(totalMacros.calories)}</div>
-                  <div className="text-sm text-gray-600">Calories</div>
+                  <div className="text-sm text-gray-600">{t("calories")}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">{Math.round(totalMacros.protein)}g</div>
-                  <div className="text-sm text-gray-600">Protein</div>
+                  <div className="text-sm text-gray-600">{t("protein")}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">{Math.round(totalMacros.carbs)}g</div>
-                  <div className="text-sm text-gray-600">Carbs</div>
+                  <div className="text-sm text-gray-600">{t("carbs")}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">{Math.round(totalMacros.fat)}g</div>
-                  <div className="text-sm text-gray-600">Fat</div>
+                  <div className="text-sm text-gray-600">{t("fat")}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-cyan-600">{Math.round(totalMacros.water)}ml</div>
-                  <div className="text-sm text-gray-600">Water</div>
+                  <div className="text-sm text-gray-600">{t("water")}</div>
                 </div>
               </div>
             </CardContent>
@@ -349,15 +360,16 @@ export default function FoodPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? "Today's" : format(selectedDate, "MMM d")} Meals ({dayMacros.length})
+                {isToday ? t("todaysMeals") : t("mealsForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}{" "}
+                {t("mealsCount", { count: dayMacros.length })}
               </CardTitle>
-              <CardDescription>Your food entries for this date</CardDescription>
+              <CardDescription>{t("yourFoodEntries")}</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-gray-500">Loading...</p>
+                <p className="text-gray-500">{tCommon("loading")}</p>
               ) : dayMacros.length === 0 ? (
-                <p className="text-gray-500">No meals logged for this date</p>
+                <p className="text-gray-500">{t("noMealsLogged")}</p>
               ) : (
                 <div className="space-y-4">
                   {dayMacros.map((entry) => (
@@ -368,7 +380,7 @@ export default function FoodPage() {
                             <div className="flex-1">
                               <p className="font-medium">{entry.description}</p>
                               <p className="text-sm text-gray-500">
-                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
+                                {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a", { locale: dateLocale })}
                               </p>
                             </div>
                             {/* Display image if available */}
@@ -376,7 +388,7 @@ export default function FoodPage() {
                               <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                                 <Image
                                   src={entry.imageUrl}
-                                  alt="Meal photo"
+                                  alt={t("mealPhoto")}
                                   fill
                                   className="object-cover"
                                 />
@@ -402,31 +414,31 @@ export default function FoodPage() {
                               <div className="font-medium text-blue-700">
                                 {Math.round(entry.calculatedMacros.calories)}
                               </div>
-                              <div className="text-xs text-blue-600">cal</div>
+                              <div className="text-xs text-blue-600">{t("cal")}</div>
                             </div>
                             <div className="text-center bg-green-50 p-2 rounded">
                               <div className="font-medium text-green-700">
                                 {Math.round(entry.calculatedMacros.protein)}g
                               </div>
-                              <div className="text-xs text-green-600">protein</div>
+                              <div className="text-xs text-green-600">{t("protein").toLowerCase()}</div>
                             </div>
                             <div className="text-center bg-yellow-50 p-2 rounded">
                               <div className="font-medium text-yellow-700">
                                 {Math.round(entry.calculatedMacros.carbs)}g
                               </div>
-                              <div className="text-xs text-yellow-600">carbs</div>
+                              <div className="text-xs text-yellow-600">{t("carbs").toLowerCase()}</div>
                             </div>
                             <div className="text-center bg-red-50 p-2 rounded">
                               <div className="font-medium text-red-700">
                                 {Math.round(entry.calculatedMacros.fat)}g
                               </div>
-                              <div className="text-xs text-red-600">fat</div>
+                              <div className="text-xs text-red-600">{t("fat").toLowerCase()}</div>
                             </div>
                             <div className="text-center bg-cyan-50 p-2 rounded">
                               <div className="font-medium text-cyan-700">
                                 {Math.round(entry.calculatedMacros.water || 0)}ml
                               </div>
-                              <div className="text-xs text-cyan-600">water</div>
+                              <div className="text-xs text-cyan-600">{t("water").toLowerCase()}</div>
                             </div>
                           </div>
                           
@@ -443,14 +455,14 @@ export default function FoodPage() {
                                 className="text-xs"
                               >
                                 <Info className="h-3 w-3 mr-1" />
-                                View Calculation Details
+                                {t("viewCalculationDetails")}
                               </Button>
                             </div>
                           )}
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500 italic">
-                          Macros calculation in progress or failed
+                          {t("macrosInProgress")}
                         </div>
                       )}
                     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Calculator, Info } from "lucide-react";
 import { calculateAge } from "@/utils/ageUtils";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface ProfileFormData {
   birthDate?: string; // HTML date inputs use string format
@@ -21,7 +23,9 @@ interface ProfileFormData {
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
+  const { t } = useTranslations("profile");
+  const { t: tCommon } = useTranslations("common");
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Redirect to sign-in if not authenticated
@@ -91,7 +95,7 @@ export default function ProfilePage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -115,13 +119,15 @@ export default function ProfilePage() {
     }
   }
 
-  const activityMultipliers: Record<string, { value: number; label: string }> = {
-    sedentary: { value: 1.2, label: "Sedentary - Little or no exercise" },
-    lightly_active: { value: 1.375, label: "Lightly Active - Light exercise 1-3 days/week" },
-    moderately_active: { value: 1.55, label: "Moderately Active - Moderate exercise 3-5 days/week" },
-    very_active: { value: 1.725, label: "Very Active - Hard exercise 6-7 days/week" },
-    extremely_active: { value: 1.9, label: "Extremely Active - Very hard exercise, physical job" },
-  };
+  const getActivityMultipliers = () => ({
+    sedentary: { value: 1.2, label: t("sedentary") },
+    lightly_active: { value: 1.375, label: t("lightlyActive") },
+    moderately_active: { value: 1.55, label: t("moderatelyActive") },
+    very_active: { value: 1.725, label: t("veryActive") },
+    extremely_active: { value: 1.9, label: t("extremelyActive") },
+  });
+  
+  const activityMultipliers = getActivityMultipliers();
 
   const tdeePreview = bmrPreview * (activityMultipliers[watchedData.activityLevel || "sedentary"]?.value || 1.2);
 
@@ -131,21 +137,24 @@ export default function ProfilePage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile Setup</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
-              Configure your personal information for accurate calorie calculations
+              {t("subtitle")}
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            ← Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              {tCommon("backToDashboard")}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Success Message */}
       {showSuccess && (
         <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-          Profile updated successfully! Your calorie calculations will now be more accurate. 🎉
+          {t("profileUpdatedSuccess")}
         </div>
       )}
 
@@ -154,15 +163,15 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-800">
             <Info className="h-5 w-5" />
-            Why This Information Matters
+            {t("whyThisMatters")}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-blue-700 text-sm">
           <ul className="space-y-2">
-            <li>• <strong>BMR (Basal Metabolic Rate):</strong> Calories your body burns at rest</li>
-            <li>• <strong>TDEE (Total Daily Energy Expenditure):</strong> BMR + activity level multiplier</li>
-            <li>• <strong>Accurate tracking:</strong> Helps determine if you're in a calorie deficit or surplus</li>
-            <li>• <strong>Privacy:</strong> This data is stored securely and only used for your calculations</li>
+            <li>• <strong>{t("bmrInfo")}</strong></li>
+            <li>• <strong>{t("tdeeInfo")}</strong></li>
+            <li>• <strong>{t("accurateTracking")}</strong></li>
+            <li>• <strong>{t("privacy")}</strong></li>
           </ul>
         </CardContent>
       </Card>
@@ -173,17 +182,17 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Personal Information
+              {t("personalInformation")}
             </CardTitle>
             <CardDescription>
-              Enter your details for accurate calorie calculations
+              {t("personalInformationDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Birth Date */}
               <div>
-                <Label htmlFor="birthDate">Date of Birth</Label>
+                <Label htmlFor="birthDate">{t("dateOfBirth")}</Label>
                 <Input
                   type="date"
                   {...register("birthDate")}
@@ -195,28 +204,28 @@ export default function ProfilePage() {
 
               {/* Gender */}
               <div>
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender">{t("gender")}</Label>
                 <select
                   {...register("gender")}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="">{t("selectGender")}</option>
+                  <option value="male">{t("male")}</option>
+                  <option value="female">{t("female")}</option>
                 </select>
               </div>
 
               {/* Height */}
               <div>
-                <Label htmlFor="heightCm">Height (cm)</Label>
+                <Label htmlFor="heightCm">{t("heightCm")}</Label>
                 <Input
                   type="number"
                   min="100"
                   max="250"
                   placeholder="170"
                   {...register("heightCm", { 
-                    min: { value: 100, message: "Height must be at least 100cm" },
-                    max: { value: 250, message: "Height must be less than 250cm" },
+                    min: { value: 100, message: t("heightMin") },
+                    max: { value: 250, message: t("heightMax") },
                     valueAsNumber: true
                   })}
                 />
@@ -224,13 +233,13 @@ export default function ProfilePage() {
                   <p className="text-red-500 text-sm mt-1">{errors.heightCm.message}</p>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
-                  1 foot = 30.48cm (e.g., 5'7" = 170cm)
+                  {t("heightHint")}
                 </p>
               </div>
 
               {/* Activity Level */}
               <div>
-                <Label htmlFor="activityLevel">Activity Level</Label>
+                <Label htmlFor="activityLevel">{t("activityLevel")}</Label>
                 <select
                   {...register("activityLevel")}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -242,7 +251,7 @@ export default function ProfilePage() {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  This affects your daily calorie burn calculation
+                  {t("activityLevelHint")}
                 </p>
               </div>
 
@@ -251,7 +260,7 @@ export default function ProfilePage() {
                 className="w-full" 
                 disabled={updateProfile.isLoading}
               >
-                {updateProfile.isLoading ? "Saving..." : "Save Profile"}
+                {updateProfile.isLoading ? t("saving") : t("saveProfile")}
               </Button>
             </form>
           </CardContent>
@@ -262,42 +271,42 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Calorie Calculation Preview
+              {t("calorieCalculationPreview")}
             </CardTitle>
             <CardDescription>
-              See how your settings affect calorie calculations
+              {t("previewDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {canCalculateBMR ? (
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">BMR (Basal Metabolic Rate)</h4>
-                  <p className="text-2xl font-bold text-blue-600">{bmrPreview} cal/day</p>
-                  <p className="text-sm text-blue-600">Calories burned at rest (for 70kg weight)</p>
+                  <h4 className="font-medium text-blue-800 mb-2">{t("bmr")}</h4>
+                  <p className="text-2xl font-bold text-blue-600">{bmrPreview} {t("calPerDay")}</p>
+                  <p className="text-sm text-blue-600">{t("caloriesBurnedAtRest")}</p>
                 </div>
                 
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">TDEE (Total Daily Energy Expenditure)</h4>
-                  <p className="text-2xl font-bold text-green-600">{Math.round(tdeePreview)} cal/day</p>
+                  <h4 className="font-medium text-green-800 mb-2">{t("tdee")}</h4>
+                  <p className="text-2xl font-bold text-green-600">{Math.round(tdeePreview)} {t("calPerDay")}</p>
                   <p className="text-sm text-green-600">
-                    BMR × {activityMultipliers[watchedData.activityLevel || "sedentary"]?.value} (activity multiplier)
+                    {t("activityMultiplier", { multiplier: activityMultipliers[watchedData.activityLevel || "sedentary"]?.value })}
                   </p>
                 </div>
 
                 <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  <p><strong>How it works:</strong></p>
-                  <p>• TDEE = your daily calorie burn without exercise</p>
-                  <p>• Exercise calories are added on top of this</p>
-                  <p>• Deficit = consuming less than total burn</p>
-                  <p>• Surplus = consuming more than total burn</p>
+                  <p><strong>{t("howItWorks")}</strong></p>
+                  <p>• {t("tdeeExplanation")}</p>
+                  <p>• {t("exerciseExplanation")}</p>
+                  <p>• {t("deficitExplanation")}</p>
+                  <p>• {t("surplusExplanation")}</p>
                 </div>
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Calculator className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Enter your birth date, gender, and height</p>
-                <p className="text-sm">to see your calorie calculation preview</p>
+                <p>{t("enterDetails")}</p>
+                <p className="text-sm">{t("seePreview")}</p>
               </div>
             )}
           </CardContent>
