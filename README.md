@@ -111,6 +111,8 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Image preview modal for weight photos**
 - [x] ✅ **Month/year selector for quick navigation**
 - [x] ✅ **Water consumption tracking in macro calculations**
+- [x] ✅ **Comprehensive calendar view aggregating all health data**
+- [x] ✅ **Day details modal with timeline and calorie balance**
 
 ### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
@@ -487,4 +489,72 @@ Track your physical activities and monitor your daily calorie balance with these
 - Climbing
 - Other (custom activities)
 
-Each activity type has specific calorie burn rates calibrated for different intensity levels (low, moderate, high) and adjusted for your body weight. 
+Each activity type has specific calorie burn rates calibrated for different intensity levels (low, moderate, high) and adjusted for your body weight.
+
+## 📅 Calendar View
+
+A comprehensive monthly calendar view that aggregates all your health tracking data in one place, providing a visual overview of your daily activities and detailed insights for specific days.
+
+### Calendar Features
+- **Monthly Navigation**: Browse through different months using previous/next buttons
+- **Today Button**: Quick navigation to current month
+- **Daily Summaries**: Each day shows count indicators for:
+  - 🍽️ Meals logged (green)
+  - 🏃‍♂️ Activities recorded (blue)
+  - 🚽 Health entries (red)
+  - ⚖️ Weight entries (purple)
+- **Calorie Display**: Each calendar cell shows total calories eaten and burned when available
+- **Interactive Days**: Click any day to view detailed timeline
+
+### Day Details Modal
+When clicking on any day, a detailed popup shows:
+
+#### Summary Cards
+- **Meals**: Count and total calories consumed
+- **Activities**: Count and total calories burned
+- **Health Entries**: Count of intestinal health logs
+- **Weight**: Count of weight recordings
+
+#### Calorie Balance
+- Shows net calorie balance (consumed - burned)
+- Color-coded: red for deficit, default for surplus
+
+#### Timeline View
+Chronological list of all events for the day, including:
+- **Meals**: Description, time, macro breakdown
+- **Activities**: Type, duration, intensity, calories burned, time
+- **Health Entries**: Bristol scale, pain level, color, notes, time
+- **Weight**: Weight value (no time shown, as weight entries are date-only)
+
+### Technical Implementation
+- **Backend**: `src/server/api/routers/calendar.ts`
+  - `getMonthData`: Aggregates all data for a month
+  - `getDayDetails`: Provides detailed timeline for a specific day
+- **Frontend**: `src/app/calendar/page.tsx`
+  - Responsive calendar grid
+  - Interactive day cells
+  - Modal popup for day details
+  - Month navigation
+  - Color-coded activity indicators
+- **Navigation**: Calendar button in dashboard header, direct link: `/calendar`
+
+### Data Integration
+The calendar integrates data from all existing tracking features:
+- **MacroEntry**: Food/meal logs with AI-calculated nutrition
+- **ActivityEntry**: Exercise and physical activity logs
+- **IntestinalEntry**: Health tracking entries
+- **WeightEntry**: Daily weight measurements
+
+### Usage
+1. **Access**: Click "Calendar" button in dashboard header
+2. **Navigate**: Use arrow buttons or "Today" to change months
+3. **View Day**: Click any day to see detailed timeline
+4. **Timeline**: Scroll through chronological events
+5. **Return**: Use "Back to Dashboard" or close modal
+
+### Benefits
+- **Overview**: See activity patterns across weeks/months
+- **Insights**: Identify trends in health tracking
+- **Planning**: Spot gaps in data recording
+- **Motivation**: Visual progress tracking
+- **Convenience**: Quick access to historical data 

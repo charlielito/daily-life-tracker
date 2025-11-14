@@ -284,6 +284,12 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link href="/calendar">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Calendar
+              </Button>
+            </Link>
             <Link href="/subscription">
               <Button variant="outline" size="sm">
                 {isUnlimited ? "Manage Plan" : "Upgrade"}
