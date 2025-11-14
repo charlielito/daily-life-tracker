@@ -1,34 +1,59 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { locales, type Locale } from "@/i18n/request";
 import { Globe } from "lucide-react";
 
+function detectLocaleFromURL(): Locale {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+  const pathSegments = window.location.pathname.split('/').filter(Boolean);
+  return pathSegments.length > 0 && locales.includes(pathSegments[0] as Locale)
+    ? (pathSegments[0] as Locale)
+    : 'en';
+}
+
+function getPathWithoutLocale(): string {
+  if (typeof window === 'undefined') {
+    return '/';
+  }
+  const pathSegments = window.location.pathname.split('/').filter(Boolean);
+  // If first segment is a locale, remove it
+  if (pathSegments.length > 0 && locales.includes(pathSegments[0] as Locale)) {
+    const pathWithoutLocale = '/' + pathSegments.slice(1).join('/');
+    return pathWithoutLocale || '/';
+  }
+  // No locale prefix, return the full path
+  return window.location.pathname || '/';
+}
+
 export function LanguageSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
-
-  // Extract current locale from pathname
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const currentLocale: Locale = 
-    pathSegments.length > 0 && locales.includes(pathSegments[0] as Locale)
-      ? (pathSegments[0] as Locale)
-      : 'en';
-
-  // Get the path without locale prefix
-  const pathWithoutLocale = pathSegments.length > 0 && locales.includes(pathSegments[0] as Locale)
-    ? '/' + pathSegments.slice(1).join('/')
-    : pathname;
+  
+  // Read locale from browser URL since middleware rewrites the pathname
+  const [currentLocale, setCurrentLocale] = useState<Locale>(detectLocaleFromURL);
+  
+  useEffect(() => {
+    // Update locale when pathname changes (for navigation)
+    const detectedLocale = detectLocaleFromURL();
+    setCurrentLocale(detectedLocale);
+  }, [pathname]);
 
   const switchLanguage = (newLocale: Locale) => {
     if (newLocale === currentLocale) return;
 
+    // Get the actual path without locale from browser URL
+    const pathWithoutLocale = getPathWithoutLocale();
+
     // Build new path with locale
     let newPath: string;
     if (newLocale === 'en') {
-      // For English (default), remove locale prefix
-      newPath = pathWithoutLocale || '/';
+      // For English (default), use path without locale prefix
+      newPath = pathWithoutLocale;
     } else {
       // For other locales, add prefix
       // Ensure path starts with / and handle root path

@@ -113,8 +113,9 @@ export const calendarRouter = createTRPCRouter({
 
       // Process macro entries
       macroEntries.forEach(entry => {
+        // Use UTC methods since localDateTime is stored as UTC but represents local time
         const date = new Date(entry.localDateTime);
-        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
         
         if (dayData[dateKey]) {
           dayData[dateKey].macroCount++;
@@ -134,8 +135,9 @@ export const calendarRouter = createTRPCRouter({
 
       // Process activity entries
       activityEntries.forEach(entry => {
+        // Use UTC methods since localDateTime is stored as UTC but represents local time
         const date = new Date(entry.localDateTime);
-        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
         
         if (dayData[dateKey]) {
           dayData[dateKey].activityCount++;
@@ -148,8 +150,9 @@ export const calendarRouter = createTRPCRouter({
 
       // Process intestinal entries
       intestinalEntries.forEach(entry => {
+        // Use UTC methods since localDateTime is stored as UTC but represents local time
         const date = new Date(entry.localDateTime);
-        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
         
         if (dayData[dateKey]) {
           dayData[dateKey].healthCount++;
