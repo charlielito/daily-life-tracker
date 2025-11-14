@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useLocalizedRouter();
   const { t } = useTranslations("dashboard");
+  const { t: tCommon } = useTranslations("common");
   const dateLocale = useDateLocale();
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -384,7 +385,7 @@ export default function DashboardPage() {
               
               {!isSelectedDateToday && (
                 <Button variant="ghost" size="sm" onClick={goToToday}>
-                  {t("today")}
+                  {tCommon("today")}
                 </Button>
               )}
             </div>
