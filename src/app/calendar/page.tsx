@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Activity, Utensils
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
 import Link from "next/link";
 import { convertUTCToLocalDisplay } from "@/utils/dateUtils";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { LocalizedLink } from "@/components/ui/localized-link";
 
 
 interface DayData {
@@ -41,7 +44,11 @@ interface TimelineEntry {
 
 export default function CalendarPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
+  const { t } = useTranslations("calendar");
+  const { t: tCommon } = useTranslations("common");
+  const { t: tFood } = useTranslations("food");
+  const { t: tActivity } = useTranslations("activity");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -142,7 +149,7 @@ export default function CalendarPage() {
   if (status === "loading" || !session) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -153,13 +160,14 @@ export default function CalendarPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Calendar View</h1>
-            <p className="text-gray-600">Track your daily activities and health metrics</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
+            <p className="text-gray-600">{t("subtitle")}</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/dashboard">
-              <Button variant="outline">Back to Dashboard</Button>
-            </Link>
+            <LanguageSwitcher />
+            <LocalizedLink href="/dashboard">
+              <Button variant="outline">{t("backToDashboard")}</Button>
+            </LocalizedLink>
           </div>
         </div>
       </div>
@@ -187,21 +195,21 @@ export default function CalendarPage() {
                   onChange={(e) => setShowCalories(e.target.checked)}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Show calories</span>
+                <span className="text-sm text-gray-700">{t("showCalories")}</span>
               </label>
               <Button variant="outline" size="sm" onClick={goToToday}>
-                Today
+                {tCommon("today")}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading calendar data...</div>
+            <div className="text-center py-8">{t("loadingCalendarData")}</div>
           ) : (
             <div className="grid grid-cols-7 gap-2">
               {/* Day headers */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              {[t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")].map(day => (
                 <div key={day} className="p-2 text-center font-medium text-gray-500 text-sm">
                   {day}
                 </div>
@@ -263,12 +271,12 @@ export default function CalendarPage() {
                           <div className="mt-1 pt-1 border-t border-gray-200 space-y-0.5">
                             {dayData.totalCalories && (
                               <div className="text-xs text-gray-600">
-                                <span className="font-medium">+{Math.round(dayData.totalCalories)}</span> cal
+                                <span className="font-medium">+{Math.round(dayData.totalCalories)}</span> {tFood("cal")}
                               </div>
                             )}
                             {dayData.totalCaloriesBurned && (
                               <div className="text-xs text-gray-600">
-                                <span className="font-medium">-{dayData.totalCaloriesBurned}</span> cal
+                                <span className="font-medium">-{dayData.totalCaloriesBurned}</span> {tFood("cal")}
                               </div>
                             )}
                           </div>
@@ -286,25 +294,25 @@ export default function CalendarPage() {
       {/* Legend */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Legend</CardTitle>
+          <CardTitle className="text-lg">{t("legend")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2">
               <Utensils className="h-4 w-4 text-green-600" />
-              <span className="text-sm">Meals</span>
+              <span className="text-sm">{t("meals")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-blue-600" />
-              <span className="text-sm">Activities</span>
+              <span className="text-sm">{t("activities")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm">🚽</span>
-              <span className="text-sm">Health Entries</span>
+              <span className="text-sm">{t("healthEntries")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Scale className="h-4 w-4 text-purple-600" />
-              <span className="text-sm">Weight</span>
+              <span className="text-sm">{t("weight")}</span>
             </div>
           </div>
         </CardContent>
@@ -316,12 +324,12 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              {selectedDay && format(selectedDay, 'EEEE, MMMM d, yyyy')}
+              {selectedDay && t("dayDetails", { date: format(selectedDay, 'EEEE, MMMM d, yyyy') })}
             </DialogTitle>
           </DialogHeader>
           
           {dayDetailsLoading ? (
-            <div className="text-center py-8">Loading day details...</div>
+            <div className="text-center py-8">{t("loadingDayDetails")}</div>
           ) : dayDetails ? (
             <div className="space-y-6">
               {/* Summary */}
@@ -330,11 +338,11 @@ export default function CalendarPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Utensils className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">Meals</span>
+                      <span className="text-sm font-medium">{t("mealsLabel")}</span>
                     </div>
                     <div className="text-2xl font-bold">{dayDetails.summary.mealsCount}</div>
                     {dayDetails.summary.totalCalories > 0 && (
-                      <div className="text-sm text-gray-600">{dayDetails.summary.totalCalories} cal</div>
+                      <div className="text-sm text-gray-600">{dayDetails.summary.totalCalories} {tFood("cal")}</div>
                     )}
                   </CardContent>
                 </Card>
@@ -343,11 +351,11 @@ export default function CalendarPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Activity className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium">Activities</span>
+                      <span className="text-sm font-medium">{t("activitiesLabel")}</span>
                     </div>
                     <div className="text-2xl font-bold">{dayDetails.summary.activitiesCount}</div>
                     {dayDetails.summary.totalCaloriesBurned > 0 && (
-                      <div className="text-sm text-gray-600">{dayDetails.summary.totalCaloriesBurned} cal burned</div>
+                      <div className="text-sm text-gray-600">{dayDetails.summary.totalCaloriesBurned} {t("calBurned")}</div>
                     )}
                   </CardContent>
                 </Card>
@@ -356,7 +364,7 @@ export default function CalendarPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-base">🚽</span>
-                      <span className="text-sm font-medium">Health</span>
+                      <span className="text-sm font-medium">{t("healthLabel")}</span>
                     </div>
                     <div className="text-2xl font-bold">{dayDetails.summary.healthEntriesCount}</div>
                   </CardContent>
@@ -366,7 +374,7 @@ export default function CalendarPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Scale className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium">Weight</span>
+                      <span className="text-sm font-medium">{t("weightLabel")}</span>
                     </div>
                     <div className="text-2xl font-bold">{dayDetails.summary.weightEntriesCount}</div>
                   </CardContent>
@@ -378,9 +386,9 @@ export default function CalendarPage() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Calorie Balance</span>
+                      <span className="font-medium">{t("calorieBalance")}</span>
                       <Badge variant={dayDetails.summary.calorieBalance < 0 ? "destructive" : "default"}>
-                        {dayDetails.summary.calorieBalance > 0 ? '+' : ''}{dayDetails.summary.calorieBalance} cal
+                        {dayDetails.summary.calorieBalance > 0 ? '+' : ''}{dayDetails.summary.calorieBalance} {tFood("cal")}
                       </Badge>
                     </div>
                   </CardContent>
@@ -391,50 +399,92 @@ export default function CalendarPage() {
               {dayDetails.timeline.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Timeline</CardTitle>
+                    <CardTitle className="text-lg">{t("timeline")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {dayDetails.timeline.map((entry: TimelineEntry) => (
-                        <div key={entry.id} className="flex items-start gap-3">
-                          <div className={`p-2 rounded-full ${getTimelineColor(entry.type)}`}>
-                            {getTimelineIcon(entry.type)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{entry.title}</span>
-                              {entry.type !== 'weight' && (
-                                <span className="text-sm text-gray-500">
-                                  {format(convertUTCToLocalDisplay(entry.time), 'h:mm a')}
-                                </span>
+                      {dayDetails.timeline.map((entry: TimelineEntry) => {
+                        // Translate entry title based on type
+                        let translatedTitle = entry.title;
+                        if (entry.title === 'Meal') {
+                          translatedTitle = t("mealTitle");
+                        } else if (entry.title === 'Health Entry') {
+                          translatedTitle = t("healthEntryTitle");
+                        } else if (entry.title === 'Weight') {
+                          translatedTitle = t("weightTitle");
+                        }
+
+                        // Translate entry description based on type
+                        let translatedDescription = entry.description;
+                        if (entry.type === 'activity') {
+                          // Description format: "description (duration min, caloriesBurned cal)"
+                          // Handle both English and Spanish formats
+                          const matchEn = entry.description.match(/^(.+?)\s*\((\d+)\s*min,\s*(\d+)\s*cal\)$/);
+                          const matchEs = entry.description.match(/^(.+?)\s*\((\d+)\s*min,\s*(\d+)\s*cal\)$/);
+                          if (matchEn || matchEs) {
+                            const match = matchEn || matchEs;
+                            const [, desc, duration, calories] = match!;
+                            translatedDescription = `${desc} (${duration} ${t("min")}, ${calories} ${t("cal")})`;
+                          }
+                        } else if (entry.type === 'health') {
+                          // Description format: "Bristol Scale X, Pain Level Y" or "Escala de Bristol X, Nivel de Dolor Y"
+                          const matchEn = entry.description.match(/Bristol Scale\s+(\d+),\s*Pain Level\s+(\d+)/);
+                          const matchEs = entry.description.match(/Escala de Bristol\s+(\d+),\s*Nivel de Dolor\s+(\d+)/);
+                          if (matchEn || matchEs) {
+                            const match = matchEn || matchEs;
+                            const [, consistency, painLevel] = match!;
+                            translatedDescription = `${t("bristolScale")} ${consistency}, ${t("painLevel")} ${painLevel}`;
+                          }
+                        } else if (entry.type === 'weight') {
+                          // Description format: "X kg" (same in both languages)
+                          const match = entry.description.match(/(\d+(?:\.\d+)?)\s*kg/);
+                          if (match) {
+                            const [, weight] = match;
+                            translatedDescription = `${weight} ${t("kg")}`;
+                          }
+                        }
+
+                        return (
+                          <div key={entry.id} className="flex items-start gap-3">
+                            <div className={`p-2 rounded-full ${getTimelineColor(entry.type)}`}>
+                              {getTimelineIcon(entry.type)}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">{translatedTitle}</span>
+                                {entry.type !== 'weight' && (
+                                  <span className="text-sm text-gray-500">
+                                    {format(convertUTCToLocalDisplay(entry.time), 'h:mm a')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600">{translatedDescription}</p>
+                              
+                              {/* Additional details based on type */}
+                              {entry.type === 'meal' && entry.details.calculatedMacros && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  {tFood("protein")}: {entry.details.calculatedMacros.protein}g | 
+                                  {tFood("carbs")}: {entry.details.calculatedMacros.carbs}g | 
+                                  {tFood("fat")}: {entry.details.calculatedMacros.fat}g
+                                </div>
+                              )}
+                              
+                              {entry.type === 'activity' && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  {t("intensity")}: {entry.details.intensity} | {t("duration")}: {entry.details.duration} {t("min")}
+                                </div>
+                              )}
+                              
+                              {entry.type === 'health' && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  {t("color")}: {entry.details.color}
+                                  {entry.details.notes && ` | ${t("notes")}: ${entry.details.notes}`}
+                                </div>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">{entry.description}</p>
-                            
-                            {/* Additional details based on type */}
-                            {entry.type === 'meal' && entry.details.calculatedMacros && (
-                              <div className="mt-2 text-xs text-gray-500">
-                                Protein: {entry.details.calculatedMacros.protein}g | 
-                                Carbs: {entry.details.calculatedMacros.carbs}g | 
-                                Fat: {entry.details.calculatedMacros.fat}g
-                              </div>
-                            )}
-                            
-                            {entry.type === 'activity' && (
-                              <div className="mt-2 text-xs text-gray-500">
-                                Intensity: {entry.details.intensity} | Duration: {entry.details.duration} min
-                              </div>
-                            )}
-                            
-                            {entry.type === 'health' && (
-                              <div className="mt-2 text-xs text-gray-500">
-                                Color: {entry.details.color}
-                                {entry.details.notes && ` | Notes: ${entry.details.notes}`}
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -443,13 +493,13 @@ export default function CalendarPage() {
               {/* No data message */}
               {dayDetails.timeline.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  No entries recorded for this day
+                  {t("noEntriesRecorded")}
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No data available for this day
+              {t("noDataAvailable")}
             </div>
           )}
         </DialogContent>

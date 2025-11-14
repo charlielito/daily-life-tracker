@@ -10,6 +10,7 @@ import { ImageUpload } from "./image-upload";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
+import { useTranslations } from "@/utils/useTranslations";
 
 interface EditEntryModalProps {
   isOpen: boolean;
@@ -22,19 +23,30 @@ interface EditEntryModalProps {
   error?: any;
 }
 
-const BRISTOL_SCALE = [
-  { value: "1", label: "Type 1: Separate hard lumps" },
-  { value: "2", label: "Type 2: Sausage-shaped but lumpy" },
-  { value: "3", label: "Type 3: Sausage-shaped with cracks" },
-  { value: "4", label: "Type 4: Sausage-shaped, smooth and soft" },
-  { value: "5", label: "Type 5: Soft blobs with clear-cut edges" },
-  { value: "6", label: "Type 6: Fluffy pieces with ragged edges" },
-  { value: "7", label: "Type 7: Watery, no solid pieces" },
-];
+function getBristolScale(t: (key: string) => string) {
+  return [
+    { value: "1", label: t("bristolType1") },
+    { value: "2", label: t("bristolType2") },
+    { value: "3", label: t("bristolType3") },
+    { value: "4", label: t("bristolType4") },
+    { value: "5", label: t("bristolType5") },
+    { value: "6", label: t("bristolType6") },
+    { value: "7", label: t("bristolType7") },
+  ];
+}
 
-const COMMON_COLORS = [
-  "Brown", "Light Brown", "Dark Brown", "Yellow", "Green", "Red", "Black", "Other"
-];
+function getCommonColors(t: (key: string) => string) {
+  return [
+    { value: "Brown", label: t("colorBrown") },
+    { value: "Light Brown", label: t("colorLightBrown") },
+    { value: "Dark Brown", label: t("colorDarkBrown") },
+    { value: "Yellow", label: t("colorYellow") },
+    { value: "Green", label: t("colorGreen") },
+    { value: "Red", label: t("colorRed") },
+    { value: "Black", label: t("colorBlack") },
+    { value: "Other", label: t("colorOther") },
+  ];
+}
 
 export function EditEntryModal({
   isOpen,
@@ -46,6 +58,11 @@ export function EditEntryModal({
   isLoading = false,
   error
 }: EditEntryModalProps) {
+  const { t } = useTranslations(type === "food" ? "food" : "health");
+  const { t: tCommon } = useTranslations("common");
+  const BRISTOL_SCALE = type === "health" ? getBristolScale(t) : [];
+  const COMMON_COLORS = type === "health" ? getCommonColors(t) : [];
+  
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -126,7 +143,7 @@ export function EditEntryModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold">
-            Edit {type === "food" ? "Meal" : "Health"} Entry
+            {type === "food" ? t("editMealEntry") : t("editHealthEntry")}
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -147,27 +164,27 @@ export function EditEntryModal({
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-red-800 font-medium">
-                      {type === "food" ? "Macro Calculation Error" : "Update Error"}
+                      {type === "food" ? t("macroCalculationError") : t("updateError")}
                     </p>
                     <p className="text-sm text-red-700 mt-1">{error.message}</p>
                     {type === "food" && error.message.includes("limit") && (
                       <p className="text-xs text-red-600 mt-2">
-                        💡 Consider upgrading your plan for unlimited AI calculations
+                        {t("limitReachedHint")}
                       </p>
                     )}
                     {type === "food" && error.message.includes("detailed description") && (
                       <p className="text-xs text-red-600 mt-2">
-                        💡 Try adding more details like portion size, cooking method, or ingredients
+                        {t("detailedDescriptionHint")}
                       </p>
                     )}
                     {type === "food" && error.message.includes("network") && (
                       <p className="text-xs text-red-600 mt-2">
-                        💡 Check your internet connection and try again
+                        {t("networkHint")}
                       </p>
                     )}
                     {type === "food" && error.message.includes("timeout") && (
                       <p className="text-xs text-red-600 mt-2">
-                        💡 Try a shorter, more concise description
+                        {t("timeoutHint")}
                       </p>
                     )}
                   </div>
@@ -178,10 +195,10 @@ export function EditEntryModal({
             <div className="space-y-4">
               <div>
                 <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  {type === "food" ? "When did you eat this?" : "When did this occur?"}
+                  {type === "food" ? t("whenDidYouEat") : t("whenOccurred")}
                 </label>
                 <input
-                  {...register("localDateTime", { required: "Date and time are required" })}
+                  {...register("localDateTime", { required: t("dateAndTimeRequired") })}
                   type="datetime-local"
                   id="localDateTime"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -195,13 +212,13 @@ export function EditEntryModal({
               <>
                 <div className="space-y-2">
                   <Label htmlFor="description">
-                    Food Description {uploadedImageUrl && <span className="text-gray-500 font-normal">(Optional when photo is provided)</span>}
+                    {t("foodDescription")} {uploadedImageUrl && <span className="text-gray-500 font-normal">{t("foodDescriptionOptional")}</span>}
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder={uploadedImageUrl ? "Optional: Add details about your meal, or let AI analyze the photo" : "Describe what you ate..."}
+                    placeholder={uploadedImageUrl ? t("foodDescriptionPlaceholder") : t("mealDescriptionPlaceholder")}
                     {...register("description", { 
-                      required: !uploadedImageUrl ? "Description is required or upload a photo" : false 
+                      required: !uploadedImageUrl ? t("foodDescriptionRequired") : false 
                     })}
                   />
                   {errors.description && (
@@ -209,7 +226,7 @@ export function EditEntryModal({
                   )}
                   {uploadedImageUrl && (
                     <p className="text-xs text-gray-500">
-                      💡 With a photo, AI can analyze your meal automatically. Adding a description helps improve accuracy.
+                      {t("photoHint")}
                     </p>
                   )}
                 </div>
@@ -218,18 +235,18 @@ export function EditEntryModal({
                   onImageUpload={handleImageUpload}
                   onImageRemove={handleImageRemove}
                   currentImage={uploadedImageUrl}
-                  label="Food Photo "
+                  label={t("foodPhotoLabel")}
                   disabled={isLoading}
                 />
               </>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="consistency">Bristol Stool Scale</Label>
+                  <Label htmlFor="consistency">{t("bristolStoolScale")}</Label>
                   <select
                     id="consistency"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register("consistency", { required: "Please select consistency" })}
+                    {...register("consistency", { required: t("selectConsistency") })}
                   >
                     {BRISTOL_SCALE.map((scale) => (
                       <option key={scale.value} value={scale.value}>
@@ -243,15 +260,15 @@ export function EditEntryModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="color">Color</Label>
+                  <Label htmlFor="color">{t("color")}</Label>
                   <select
                     id="color"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register("color", { required: "Please select color" })}
+                    {...register("color", { required: t("selectColor") })}
                   >
                     {COMMON_COLORS.map((color) => (
-                      <option key={color} value={color}>
-                        {color}
+                      <option key={color.value} value={color.value}>
+                        {color.label}
                       </option>
                     ))}
                   </select>
@@ -261,7 +278,7 @@ export function EditEntryModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="painLevel">Pain Level (0-10)</Label>
+                  <Label htmlFor="painLevel">{t("painLevel")}</Label>
                   <Input
                     id="painLevel"
                     type="range"
@@ -271,9 +288,9 @@ export function EditEntryModal({
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>0 - No pain</span>
-                    <span className="font-medium text-gray-700">Current: {watch("painLevel")}</span>
-                    <span>10 - Severe pain</span>
+                    <span>{t("noPain")}</span>
+                    <span className="font-medium text-gray-700">{t("current", { level: watch("painLevel") })}</span>
+                    <span>{t("severePain")}</span>
                   </div>
                   {(errors as any).painLevel && (
                     <p className="text-red-500 text-sm">{(errors as any).painLevel.message}</p>
@@ -281,10 +298,10 @@ export function EditEntryModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Label htmlFor="notes">{t("notesOptional")}</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Any additional notes..."
+                    placeholder={t("notesPlaceholder")}
                     {...register("notes")}
                   />
                 </div>
@@ -293,7 +310,7 @@ export function EditEntryModal({
                   onImageUpload={handleImageUpload}
                   onImageRemove={handleImageRemove}
                   currentImage={uploadedImageUrl}
-                  label="Photo (Optional)"
+                  label={t("photoOptional")}
                   disabled={isLoading}
                 />
               </>
@@ -307,7 +324,7 @@ export function EditEntryModal({
                 className="flex-1" 
                 disabled={isLoading}
               >
-                {isLoading ? "Saving..." : "Save Changes"}
+                {isLoading ? tCommon("saving") : tCommon("saveChanges")}
               </Button>
               
               <Button
@@ -316,7 +333,7 @@ export function EditEntryModal({
                 onClick={onClose}
                 disabled={isLoading}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               
               <Button
@@ -335,9 +352,9 @@ export function EditEntryModal({
         {showDeleteConfirm && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-              <h3 className="text-lg font-semibold mb-2">Delete Entry</h3>
+              <h3 className="text-lg font-semibold mb-2">{tCommon("deleteEntry")}</h3>
               <p className="text-gray-600 mb-4">
-                Are you sure you want to delete this {type} entry? This action cannot be undone.
+                {type === "health" ? t("deleteHealthEntry") : type === "food" ? t("deleteMealEntry") : tCommon("deleteConfirmation")}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -346,7 +363,7 @@ export function EditEntryModal({
                   disabled={isLoading}
                   className="flex-1"
                 >
-                  Delete
+                  {tCommon("delete")}
                 </Button>
                 <Button
                   variant="outline"
@@ -354,7 +371,7 @@ export function EditEntryModal({
                   disabled={isLoading}
                   className="flex-1"
                 >
-                  Cancel
+                  {tCommon("cancel")}
                 </Button>
               </div>
             </div>

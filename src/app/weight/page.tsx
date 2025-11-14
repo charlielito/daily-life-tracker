@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect, useState } from "react";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { ChevronLeft, ChevronRight, Edit, Trash2, Camera, Calendar, X, ZoomIn } from "lucide-react";
 import Image from "next/image";
 import { convertUTCToLocalDisplay } from "@/utils/dateUtils";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface WeightEditModalProps {
   isOpen: boolean;
@@ -72,6 +75,8 @@ function WeightEditModal({
   entry,
   isLoading = false,
 }: WeightEditModalProps) {
+  const { t } = useTranslations("weight");
+  const { t: tCommon } = useTranslations("common");
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
   const [weight, setWeight] = useState(entry?.weight?.toString() || "");
 
@@ -107,7 +112,7 @@ function WeightEditModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Edit Weight Entry</h2>
+          <h2 className="text-lg font-semibold">{t("editWeightEntry")}</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             ×
           </Button>
@@ -115,7 +120,7 @@ function WeightEditModal({
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="weight">Weight (kg)</Label>
+            <Label htmlFor="weight">{t("weightKg")}</Label>
             <Input
               id="weight"
               type="number"
@@ -132,7 +137,7 @@ function WeightEditModal({
             onImageUpload={handleImageUpload}
             onImageRemove={handleImageRemove}
             currentImage={uploadedImageUrl}
-            label="Weight Photo (Optional)"
+            label={t("weightPhoto")}
             disabled={isLoading}
           />
 
@@ -142,7 +147,7 @@ function WeightEditModal({
               className="flex-1" 
               disabled={isLoading}
             >
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? t("saving") : t("saveChanges")}
             </Button>
             
             <Button
@@ -151,7 +156,7 @@ function WeightEditModal({
               disabled={isLoading}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t("delete")}
             </Button>
           </div>
         </div>
@@ -162,8 +167,10 @@ function WeightEditModal({
 
 export default function WeightPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslations("weight");
+  const { t: tCommon } = useTranslations("common");
   
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
@@ -277,7 +284,7 @@ export default function WeightPage() {
   if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -291,12 +298,15 @@ export default function WeightPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Weight Entries</h1>
-          <p className="text-gray-600 mt-2">Track your weight progress over time</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("title")}</h1>
+          <p className="text-gray-600 mt-2">{t("subtitle")}</p>
         </div>
-        <Button variant="outline" onClick={() => router.push("/dashboard")}>
-          ← Back to Dashboard
-        </Button>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+            {tCommon("backToDashboard")}
+          </Button>
+        </div>
       </div>
 
       {/* Month Navigation */}
@@ -322,7 +332,7 @@ export default function WeightPage() {
               </div>
               
               <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
-                Today
+                {tCommon("today")}
               </Button>
             </div>
             
@@ -336,18 +346,18 @@ export default function WeightPage() {
       {/* Calendar Grid */}
       <Card>
         <CardHeader>
-          <CardTitle>Weight Entries for {format(selectedMonth, "MMMM yyyy")}</CardTitle>
+          <CardTitle>{t("weightEntriesForMonth", { month: format(selectedMonth, "MMMM yyyy") })}</CardTitle>
           <CardDescription>
-            {weightEntries.length} entries this month
+            {t("entriesThisMonth", { count: weightEntries.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading weight entries...</div>
+            <div className="text-center py-8">{t("loadingWeightEntries")}</div>
           ) : (
             <div className="grid grid-cols-7 gap-1">
               {/* Day headers */}
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+              {[t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")].map(day => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
                   {day}
                 </div>
@@ -383,7 +393,7 @@ export default function WeightPage() {
                           >
                             <Image
                               src={(entry as any).imageUrl}
-                              alt="Weight photo"
+                              alt={t("weightPhotoFor", { date: format(day, "MMM d, yyyy") })}
                               fill
                               className="object-cover pointer-events-none"
                             />
@@ -404,7 +414,7 @@ export default function WeightPage() {
                       </div>
                     ) : (
                       <div className="text-xs text-gray-400">
-                        No entry
+                        {t("noEntry")}
                       </div>
                     )}
                   </div>

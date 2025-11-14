@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
@@ -16,6 +17,8 @@ import { format } from "date-fns";
 import { Edit } from "lucide-react";
 import Image from "next/image";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface HealthFormData {
   localDateTime: string; // Single field for datetime-local input
@@ -25,24 +28,39 @@ interface HealthFormData {
   notes?: string;
 }
 
-const BRISTOL_SCALE = [
-  { value: "1", label: "Type 1: Separate hard lumps" },
-  { value: "2", label: "Type 2: Sausage-shaped but lumpy" },
-  { value: "3", label: "Type 3: Sausage-shaped with cracks" },
-  { value: "4", label: "Type 4: Sausage-shaped, smooth and soft" },
-  { value: "5", label: "Type 5: Soft blobs with clear-cut edges" },
-  { value: "6", label: "Type 6: Fluffy pieces with ragged edges" },
-  { value: "7", label: "Type 7: Watery, no solid pieces" },
-];
+function getCommonColors(t: (key: string) => string) {
+  return [
+    { value: "Brown", label: t("colorBrown") },
+    { value: "Light Brown", label: t("colorLightBrown") },
+    { value: "Dark Brown", label: t("colorDarkBrown") },
+    { value: "Yellow", label: t("colorYellow") },
+    { value: "Green", label: t("colorGreen") },
+    { value: "Red", label: t("colorRed") },
+    { value: "Black", label: t("colorBlack") },
+    { value: "Other", label: t("colorOther") },
+  ];
+}
 
-const COMMON_COLORS = [
-  "Brown", "Light Brown", "Dark Brown", "Yellow", "Green", "Red", "Black", "Other"
-];
+function getBristolScale(t: (key: string) => string) {
+  return [
+    { value: "1", label: t("bristolType1") },
+    { value: "2", label: t("bristolType2") },
+    { value: "3", label: t("bristolType3") },
+    { value: "4", label: t("bristolType4") },
+    { value: "5", label: t("bristolType5") },
+    { value: "6", label: t("bristolType6") },
+    { value: "7", label: t("bristolType7") },
+  ];
+}
 
 export default function HealthPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslations("health");
+  const { t: tCommon } = useTranslations("common");
+  const BRISTOL_SCALE = getBristolScale(t);
+  const COMMON_COLORS = getCommonColors(t);
   
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
@@ -169,7 +187,7 @@ export default function HealthPage() {
   if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -186,15 +204,18 @@ export default function HealthPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Health Monitoring</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
               {format(selectedDate, "EEEE, MMMM d, yyyy")}
-              {!isToday && <span className="ml-2 text-amber-600 font-medium">(Past Date)</span>}
+              {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            ← Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              {tCommon("backToDashboard")}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -202,9 +223,9 @@ export default function HealthPage() {
         {/* Add New Health Entry Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Log Health Entry</CardTitle>
+            <CardTitle>{t("logHealthEntry")}</CardTitle>
             <CardDescription>
-              Track your intestinal health using the Bristol Stool Scale
+              {t("logHealthEntryDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -213,7 +234,7 @@ export default function HealthPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">
                   <p className="text-green-600 text-sm">
-                    <strong>Success!</strong> Your health entry has been logged.
+                    <strong>{tCommon("success")}</strong> {t("successMessage")}
                   </p>
                 </div>
               )}
@@ -222,7 +243,7 @@ export default function HealthPage() {
               {createHealthEntry.error && (
                 <div className="bg-red-50 border border-red-200 rounded p-3">
                   <p className="text-red-600 text-sm">
-                    <strong>Error:</strong> {createHealthEntry.error.message}
+                    <strong>{tCommon("error")}:</strong> {createHealthEntry.error.message}
                   </p>
                 </div>
               )}
@@ -230,10 +251,10 @@ export default function HealthPage() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
-                    When did this occur?
+                    {t("whenOccurred")}
                   </label>
                   <input
-                    {...register("localDateTime", { required: "Date and time are required" })}
+                    {...register("localDateTime", { required: t("dateAndTimeRequired") })}
                     type="datetime-local"
                     id="localDateTime"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -244,11 +265,11 @@ export default function HealthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="consistency">Bristol Stool Scale</Label>
+                  <Label htmlFor="consistency">{t("bristolStoolScale")}</Label>
                   <select
                     id="consistency"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register("consistency", { required: "Please select consistency" })}
+                    {...register("consistency", { required: t("selectConsistency") })}
                   >
                     {BRISTOL_SCALE.map((scale) => (
                       <option key={scale.value} value={scale.value}>
@@ -263,15 +284,15 @@ export default function HealthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
+                <Label htmlFor="color">{t("color")}</Label>
                 <select
                   id="color"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  {...register("color", { required: "Please select color" })}
+                  {...register("color", { required: t("selectColor") })}
                 >
                   {COMMON_COLORS.map((color) => (
-                    <option key={color} value={color}>
-                      {color}
+                    <option key={color.value} value={color.value}>
+                      {color.label}
                     </option>
                   ))}
                 </select>
@@ -281,7 +302,7 @@ export default function HealthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="painLevel">Pain Level (0-10)</Label>
+                <Label htmlFor="painLevel">{t("painLevel")}</Label>
                 <Input
                   id="painLevel"
                   type="range"
@@ -291,9 +312,9 @@ export default function HealthPage() {
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>0 - No pain</span>
-                  <span className="font-medium text-gray-700">Current: {watch("painLevel")}</span>
-                  <span>10 - Severe pain</span>
+                  <span>{t("noPain")}</span>
+                  <span className="font-medium text-gray-700">{t("current", { level: watch("painLevel") })}</span>
+                  <span>{t("severePain")}</span>
                 </div>
                 {errors.painLevel && (
                   <p className="text-red-500 text-sm">{errors.painLevel.message}</p>
@@ -301,10 +322,10 @@ export default function HealthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                <Label htmlFor="notes">{t("additionalNotes")}</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Any additional observations, symptoms, or notes..."
+                  placeholder={t("notesPlaceholder")}
                   {...register("notes")}
                 />
               </div>
@@ -314,7 +335,7 @@ export default function HealthPage() {
                 onImageUpload={handleImageUpload}
                 onImageRemove={handleImageRemove}
                 currentImage={uploadedImageUrl}
-                label="Health Photo (Optional)"
+                label={t("healthPhoto")}
                 disabled={createHealthEntry.isLoading}
               />
 
@@ -323,7 +344,7 @@ export default function HealthPage() {
                 className="w-full" 
                 disabled={createHealthEntry.isLoading}
               >
-                {createHealthEntry.isLoading ? "Saving entry..." : "Save Health Entry"}
+                {createHealthEntry.isLoading ? t("savingEntry") : t("saveHealthEntry")}
               </Button>
             </form>
           </CardContent>
@@ -335,15 +356,15 @@ export default function HealthPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? "Today's" : format(selectedDate, "MMM d")} Summary
+                {isToday ? t("todaysSummary") : t("summaryForDate", { date: format(selectedDate, "MMM d") })}
               </CardTitle>
-              <CardDescription>Health entries overview</CardDescription>
+              <CardDescription>{t("healthEntriesOverview")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">{dayEntries.length}</div>
-                  <div className="text-sm text-gray-600">Total Entries</div>
+                  <div className="text-sm text-gray-600">{t("totalEntries")}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
@@ -352,7 +373,7 @@ export default function HealthPage() {
                       : 0
                     }
                   </div>
-                  <div className="text-sm text-gray-600">Avg Pain Level</div>
+                  <div className="text-sm text-gray-600">{t("avgPainLevel")}</div>
                 </div>
               </div>
             </CardContent>
@@ -362,15 +383,16 @@ export default function HealthPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? "Today's" : format(selectedDate, "MMM d")} Entries ({dayEntries.length})
+                {isToday ? t("todaysEntries") : t("entriesForDate", { date: format(selectedDate, "MMM d") })}{" "}
+                {t("entriesCount", { count: dayEntries.length })}
               </CardTitle>
-              <CardDescription>Your health logs for this date</CardDescription>
+              <CardDescription>{t("yourHealthLogs")}</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-gray-500">Loading...</p>
+                <p className="text-gray-500">{tCommon("loading")}</p>
               ) : dayEntries.length === 0 ? (
-                <p className="text-gray-500">No health entries logged for this date</p>
+                <p className="text-gray-500">{t("noHealthEntries")}</p>
               ) : (
                 <div className="space-y-4">
                   {dayEntries.map((entry) => (
@@ -380,7 +402,7 @@ export default function HealthPage() {
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <p className="font-medium">
-                                Bristol Scale Type {entry.consistency}
+                                {t("bristolScaleType", { type: entry.consistency })}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
@@ -391,7 +413,7 @@ export default function HealthPage() {
                               <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                                 <Image
                                   src={entry.imageUrl}
-                                  alt="Health entry photo"
+                                  alt={t("healthEntryPhoto")}
                                   fill
                                   className="object-cover"
                                 />
@@ -421,7 +443,7 @@ export default function HealthPage() {
                         <div className="text-right">
                           <div className="text-sm font-medium">{entry.color}</div>
                           <div className="text-xs text-gray-500">
-                            Pain: {entry.painLevel}/10
+                            {t("pain", { level: entry.painLevel })}
                           </div>
                         </div>
                       </div>
@@ -452,8 +474,8 @@ export default function HealthPage() {
           {/* Bristol Scale Reference */}
           <Card>
             <CardHeader>
-              <CardTitle>Bristol Stool Scale Reference</CardTitle>
-              <CardDescription>Quick reference guide</CardDescription>
+              <CardTitle>{t("bristolStoolScaleReference")}</CardTitle>
+              <CardDescription>{t("quickReferenceGuide")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
@@ -462,11 +484,11 @@ export default function HealthPage() {
                     <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-medium text-blue-700 mr-2">
                       {scale.value}
                     </div>
-                    <span className="text-gray-700">{scale.label.replace(`Type ${scale.value}: `, '')}</span>
+                    <span className="text-gray-700">{scale.label.replace(`Type ${scale.value}: `, '').replace(`Tipo ${scale.value}: `, '')}</span>
                   </div>
                 ))}
                 <div className="text-xs text-gray-500 mt-2">
-                  Types 3-4 are considered normal
+                  {t("typesNormal")}
                 </div>
               </div>
             </CardContent>

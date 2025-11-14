@@ -1,15 +1,19 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect } from "react";
-import Link from "next/link";
+import { LocalizedLink } from "@/components/ui/localized-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/utils/useTranslations";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
+  const { t } = useTranslations("home");
+  const { t: tCommon } = useTranslations("common");
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -24,7 +28,7 @@ export default function HomePage() {
   if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -37,11 +41,13 @@ export default function HomePage() {
   // Show landing page only for unauthenticated users
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-end mb-4">
+        <LanguageSwitcher />
+      </div>
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Daily Life Tracker</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">{t("title")}</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Track your daily health metrics including nutrition, physical activity, 
-          intestinal health, and calorie balance for better insights into your wellbeing and fitness goals.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -49,18 +55,18 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              🍽️ Food Tracking
+              🍽️ {t("foodTracking")}
             </CardTitle>
             <CardDescription>
-              Log your meals and automatically calculate macronutrients using AI
+              {t("foodTrackingDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600">
-              • AI-powered macro calculation
-              • Daily nutrition summaries
-              • Weight tracking
-              • Meal history and patterns
+              • {t("aiPoweredMacro")}
+              • {t("dailyNutritionSummaries")}
+              • {t("weightTracking")}
+              • {t("mealHistory")}
             </p>
           </CardContent>
         </Card>
@@ -68,18 +74,18 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              🏃‍♂️ Activity Tracking
+              🏃‍♂️ {t("activityTracking")}
             </CardTitle>
             <CardDescription>
-              Track physical activities and monitor calories burned
+              {t("activityTrackingDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600">
-              • Log sports and exercise
-              • Automatic calorie burn calculation
-              • Activity intensity levels
-              • Exercise history and patterns
+              • {t("logSports")}
+              • {t("automaticCalorieBurn")}
+              • {t("activityIntensity")}
+              • {t("exerciseHistory")}
             </p>
           </CardContent>
         </Card>
@@ -87,18 +93,18 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              🔥 Calorie Balance
+              🔥 {t("calorieBalance")}
             </CardTitle>
             <CardDescription>
-              Monitor daily calorie deficit or surplus for your goals
+              {t("calorieBalanceDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600">
-              • BMR calculation (calories at rest)
-              • TDEE with activity level
-              • Daily deficit/surplus tracking
-              • Weight loss/gain insights
+              • {t("bmrCalculation")}
+              • {t("tdeeWithActivity")}
+              • {t("dailyDeficitSurplus")}
+              • {t("weightLossGain")}
             </p>
           </CardContent>
         </Card>
@@ -106,18 +112,18 @@ export default function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              🏥 Health Monitoring
+              🏥 {t("healthMonitoring")}
             </CardTitle>
             <CardDescription>
-              Monitor intestinal health and digestive patterns
+              {t("healthMonitoringDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600">
-              • Bristol Stool Scale tracking
-              • Pain level assessment
-              • Color and consistency logs
-              • Health pattern analysis
+              • {t("bristolStoolScale")}
+              • {t("painLevelAssessment")}
+              • {t("colorConsistency")}
+              • {t("healthPatternAnalysis")}
             </p>
           </CardContent>
         </Card>
@@ -128,30 +134,30 @@ export default function HomePage() {
         <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800 text-xl">
-              🎯 Smart Calorie Balance Tracking
+              {t("smartCalorieBalance")}
             </CardTitle>
             <CardDescription className="text-orange-700">
-              Achieve your weight goals with intelligent calorie monitoring
+              {t("achieveWeightGoals")}
             </CardDescription>
           </CardHeader>
           <CardContent className="text-orange-700">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold mb-2">How it works:</h4>
+                <h4 className="font-semibold mb-2">{t("howItWorks")}</h4>
                 <ul className="text-sm space-y-1">
-                  <li>• Set up your profile (age, gender, height, activity level)</li>
-                  <li>• Log your meals for calories consumed</li>
-                  <li>• Track your workouts for calories burned</li>
-                  <li>• Get daily deficit/surplus analysis</li>
+                  <li>• {t("setUpProfile")}</li>
+                  <li>• {t("logMeals")}</li>
+                  <li>• {t("trackWorkouts")}</li>
+                  <li>• {t("getAnalysis")}</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">What you get:</h4>
+                <h4 className="font-semibold mb-2">{t("whatYouGet")}</h4>
                 <ul className="text-sm space-y-1">
-                  <li>• BMR: Calories your body burns at rest</li>
-                  <li>• TDEE: Total daily energy expenditure</li>
-                  <li>• Activity calories: From your logged exercises</li>
-                  <li>• Balance: Know if you're meeting your goals</li>
+                  <li>• {t("bmrExplanation")}</li>
+                  <li>• {t("tdeeExplanation")}</li>
+                  <li>• {t("activityCalories")}</li>
+                  <li>• {t("balanceExplanation")}</li>
                 </ul>
               </div>
             </div>
@@ -161,20 +167,20 @@ export default function HomePage() {
 
       <div className="text-center space-y-4">
         <div className="flex gap-4 justify-center">
-          <Link href="/auth/signup">
+          <LocalizedLink href="/auth/signup">
             <Button size="lg">
-              Get Started Free
+              {t("getStartedFree")}
             </Button>
-          </Link>
-          <Link href="/auth/signin">
+          </LocalizedLink>
+          <LocalizedLink href="/auth/signin">
             <Button variant="outline" size="lg">
-              Sign In
+              {t("signIn")}
             </Button>
-          </Link>
+          </LocalizedLink>
         </div>
         
         <p className="text-sm text-gray-500 text-center">
-          Sign up with your email or continue with Google
+          {t("signUpWithEmail")}
         </p>
       </div>
     </div>
