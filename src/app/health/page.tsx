@@ -19,6 +19,8 @@ import Image from "next/image";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { formatDate } from "@/utils/formatDate";
 
 interface HealthFormData {
   localDateTime: string; // Single field for datetime-local input
@@ -59,6 +61,7 @@ export default function HealthPage() {
   const searchParams = useSearchParams();
   const { t } = useTranslations("health");
   const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   const BRISTOL_SCALE = getBristolScale(t);
   const COMMON_COLORS = getCommonColors(t);
   
@@ -206,7 +209,7 @@ export default function HealthPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
               {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
             </p>
           </div>
@@ -356,7 +359,7 @@ export default function HealthPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? t("todaysSummary") : t("summaryForDate", { date: format(selectedDate, "MMM d") })}
+                {isToday ? t("todaysSummary") : t("summaryForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </CardTitle>
               <CardDescription>{t("healthEntriesOverview")}</CardDescription>
             </CardHeader>
@@ -383,7 +386,7 @@ export default function HealthPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? t("todaysEntries") : t("entriesForDate", { date: format(selectedDate, "MMM d") })}{" "}
+                {isToday ? t("todaysEntries") : t("entriesForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}{" "}
                 {t("entriesCount", { count: dayEntries.length })}
               </CardTitle>
               <CardDescription>{t("yourHealthLogs")}</CardDescription>
@@ -405,7 +408,7 @@ export default function HealthPage() {
                                 {t("bristolScaleType", { type: entry.consistency })}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
+                                {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a", { locale: dateLocale })}
                               </p>
                             </div>
                             {/* Display image if available */}

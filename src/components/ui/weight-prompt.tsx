@@ -8,7 +8,9 @@ import { Label } from "./label";
 import { ImageUpload } from "./image-upload";
 import { X, Scale } from "lucide-react";
 import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
 import { format } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 
 interface WeightPromptProps {
   isOpen: boolean;
@@ -30,6 +32,7 @@ export function WeightPrompt({
   date,
 }: WeightPromptProps) {
   const { t } = useTranslations("weight");
+  const dateLocale = useDateLocale();
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<WeightFormData>();
 
@@ -73,7 +76,7 @@ export function WeightPrompt({
           <p className="text-gray-600 text-sm mb-2">
             {isToday 
               ? t("trackWeightToday")
-              : t("enterWeightForDate", { date: format(date, "MMM d, yyyy") })
+              : t("enterWeightForDate", { date: formatDate(date, "MMM d, yyyy", { locale: dateLocale }) })
             }
           </p>
           <p className="text-gray-500 text-xs">

@@ -18,6 +18,8 @@ import { ActivityEditModal } from "@/components/ui/activity-edit-modal";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { formatDate } from "@/utils/formatDate";
 
 interface ActivityFormData {
   activityType: string;
@@ -35,6 +37,7 @@ export default function ActivityPage() {
   const searchParams = useSearchParams();
   const { t } = useTranslations("activity");
   const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
@@ -198,7 +201,7 @@ export default function ActivityPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
               {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
             </p>
           </div>
@@ -402,7 +405,7 @@ export default function ActivityPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? t("todaysActivities") : t("activitiesForDate", { date: format(selectedDate, "MMM d") })}
+                {isToday ? t("todaysActivities") : t("activitiesForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </CardTitle>
               <CardDescription>{t("totalActivitySummary")}</CardDescription>
             </CardHeader>
@@ -455,7 +458,7 @@ export default function ActivityPage() {
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
+                              {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a", { locale: dateLocale })}
                             </span>
                             <span>{entry.duration} {t("min")}</span>
                             <span className="flex items-center gap-1">

@@ -9,8 +9,10 @@ import { Textarea } from "./textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { X, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
 
 interface ActivityEditModalProps {
   isOpen: boolean;
@@ -43,6 +45,7 @@ export function ActivityEditModal({
 }: ActivityEditModalProps) {
   const { t } = useTranslations("activity");
   const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<ActivityFormData>();
@@ -249,7 +252,7 @@ export function ActivityEditModal({
                   <p className="text-sm font-medium">{entry.activityType}</p>
                   <p className="text-sm text-gray-600">{entry.description}</p>
                   <p className="text-xs text-gray-500">
-                    {format(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a")} • {entry.duration} {t("min")}
+                    {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a", { locale: dateLocale })} • {entry.duration} {t("min")}
                   </p>
                 </div>
               </div>

@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { Input } from "@/components/ui/input";
 import { format, addDays, subDays } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import Image from "next/image";
 import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
@@ -18,6 +19,7 @@ import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { calculateAge } from "@/utils/ageUtils";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
 import { LocalizedLink } from "@/components/ui/localized-link";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 
@@ -25,6 +27,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useLocalizedRouter();
   const { t } = useTranslations("dashboard");
+  const dateLocale = useDateLocale();
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
@@ -182,11 +185,13 @@ export default function DashboardPage() {
         {/* Header with subscription info */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">
-              Welcome back, {session.user?.name || session.user?.email}!
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {format(selectedDate, "EEEE, MMMM do, yyyy")}
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {t("welcomeBack", { name: session.user?.name || session.user?.email?.split('@')[0] || "User" })} 👋
+              </h1>
+            </div>
+            <p className="text-sm md:text-base text-gray-600">
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })} • {t("trackDailyHealth")}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -283,7 +288,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="text-sm md:text-base text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")} • {t("trackDailyHealth")}
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })} • {t("trackDailyHealth")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -554,7 +559,7 @@ export default function DashboardPage() {
         <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="flex items-center gap-2 text-emerald-800 text-sm">
-              🍽️ {isSelectedDateToday ? t("todaysTotalMacros") : t("totalMacrosForDate", { date: format(selectedDate, "MMM d") })}
+              🍽️ {isSelectedDateToday ? t("todaysTotalMacros") : t("totalMacrosForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 pb-3">
@@ -592,7 +597,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-green-800">{todayMacros.length}</div>
               <p className="text-xs text-green-600 mt-1">
-                {isSelectedDateToday ? t("entriesToday") : t("entriesOnDate", { date: format(selectedDate, "MMM d") })}
+                {isSelectedDateToday ? t("entriesToday") : t("entriesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
                 <LocalizedLink href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
@@ -611,7 +616,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-purple-800">{todayIntestinal.length}</div>
               <p className="text-xs text-purple-600 mt-1">
-                {isSelectedDateToday ? t("logsToday") : t("logsOnDate", { date: format(selectedDate, "MMM d") })}
+                {isSelectedDateToday ? t("logsToday") : t("logsOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
                 <LocalizedLink href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
@@ -630,7 +635,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-amber-800">{todayActivities.length}</div>
               <p className="text-xs text-amber-600 mt-1">
-                {isSelectedDateToday ? t("exercisesToday") : t("exercisesOnDate", { date: format(selectedDate, "MMM d") })}
+                {isSelectedDateToday ? t("exercisesToday") : t("exercisesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
                 <LocalizedLink href={isSelectedDateToday ? "/activity" : `/activity?date=${format(selectedDate, "yyyy-MM-dd")}`}>
@@ -652,9 +657,9 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-orange-600 mt-1">
                 {isLatestWeight 
-                  ? `${t("from")} ${format(convertUTCToLocalDisplay(new Date(latestWeight!.localDate)), "MMM d")}`
+                  ? `${t("from")} ${formatDate(convertUTCToLocalDisplay(new Date(latestWeight!.localDate)), "MMM d", { locale: dateLocale })}`
                   : todayWeight 
-                    ? isSelectedDateToday ? t("todaysWeight") : t("weightOnDate", { date: format(selectedDate, "MMM d") })
+                    ? isSelectedDateToday ? t("todaysWeight") : t("weightOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })
                     : t("noData")
                 }
               </p>
@@ -702,7 +707,7 @@ export default function DashboardPage() {
               ) : todayMacros.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-500 mb-2">
-                    {isSelectedDateToday ? t("noMealsLoggedToday") : t("noMealsLoggedOnDate", { date: format(selectedDate, "MMM d") })}
+                    {isSelectedDateToday ? t("noMealsLoggedToday") : t("noMealsLoggedOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
                   </p>
                   <LocalizedLink href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                     <Button size="sm">{t("logYourFirstMeal")}</Button>
@@ -818,7 +823,7 @@ export default function DashboardPage() {
               ) : todayIntestinal.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-500 mb-2">
-                    {isSelectedDateToday ? t("noHealthEntriesToday") : t("noHealthEntriesOnDate", { date: format(selectedDate, "MMM d") })}
+                    {isSelectedDateToday ? t("noHealthEntriesToday") : t("noHealthEntriesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
                   </p>
                   <LocalizedLink href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                     <Button size="sm" variant="secondary">{t("logFirstEntry")}</Button>

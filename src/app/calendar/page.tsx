@@ -10,9 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Activity, Utensils, Scale } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import Link from "next/link";
 import { convertUTCToLocalDisplay } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { LocalizedLink } from "@/components/ui/localized-link";
 
@@ -49,6 +51,7 @@ export default function CalendarPage() {
   const { t: tCommon } = useTranslations("common");
   const { t: tFood } = useTranslations("food");
   const { t: tActivity } = useTranslations("activity");
+  const dateLocale = useDateLocale();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -181,7 +184,7 @@ export default function CalendarPage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <h2 className="text-xl font-semibold">
-                {format(currentDate, 'MMMM yyyy')}
+                {formatDate(currentDate, 'MMMM yyyy', { locale: dateLocale })}
               </h2>
               <Button variant="outline" size="sm" onClick={goToNextMonth}>
                 <ChevronRight className="h-4 w-4" />
@@ -237,7 +240,7 @@ export default function CalendarPage() {
                     onClick={() => handleDayClick(day)}
                   >
                     <div className="text-sm font-medium mb-1">
-                      {format(day, 'd')}
+                      {format(day, 'd', { locale: dateLocale })}
                     </div>
                     
                     {hasData && (
@@ -324,7 +327,7 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              {selectedDay && t("dayDetails", { date: format(selectedDay, 'EEEE, MMMM d, yyyy') })}
+              {selectedDay && t("dayDetails", { date: formatDate(selectedDay, 'EEEE, MMMM d, yyyy', { locale: dateLocale }) })}
             </DialogTitle>
           </DialogHeader>
           
@@ -454,7 +457,7 @@ export default function CalendarPage() {
                                 <span className="font-medium">{translatedTitle}</span>
                                 {entry.type !== 'weight' && (
                                   <span className="text-sm text-gray-500">
-                                    {format(convertUTCToLocalDisplay(entry.time), 'h:mm a')}
+                                    {formatDate(convertUTCToLocalDisplay(entry.time), 'h:mm a', { locale: dateLocale })}
                                   </span>
                                 )}
                               </div>

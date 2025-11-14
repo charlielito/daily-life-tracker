@@ -21,6 +21,8 @@ import { Info } from "lucide-react";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { formatDate } from "@/utils/formatDate";
 
 interface FoodFormData {
   description?: string;
@@ -33,6 +35,7 @@ export default function FoodPage() {
   const searchParams = useSearchParams();
   const { t } = useTranslations("food");
   const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
@@ -190,7 +193,7 @@ export default function FoodPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
             <p className="text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
               {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
             </p>
           </div>
@@ -323,7 +326,7 @@ export default function FoodPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? t("todaysMacros") : t("macrosForDate", { date: format(selectedDate, "MMM d") })}
+                {isToday ? t("todaysMacros") : t("macrosForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </CardTitle>
               <CardDescription>{t("totalNutrition")}</CardDescription>
             </CardHeader>
@@ -357,7 +360,7 @@ export default function FoodPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isToday ? t("todaysMeals") : t("mealsForDate", { date: format(selectedDate, "MMM d") })}{" "}
+                {isToday ? t("todaysMeals") : t("mealsForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}{" "}
                 {t("mealsCount", { count: dayMacros.length })}
               </CardTitle>
               <CardDescription>{t("yourFoodEntries")}</CardDescription>
@@ -377,7 +380,7 @@ export default function FoodPage() {
                             <div className="flex-1">
                               <p className="font-medium">{entry.description}</p>
                               <p className="text-sm text-gray-500">
-                                {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
+                                {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a", { locale: dateLocale })}
                               </p>
                             </div>
                             {/* Display image if available */}
