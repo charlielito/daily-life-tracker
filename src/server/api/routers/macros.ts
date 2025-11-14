@@ -120,7 +120,19 @@ async function incrementAiUsage(userId: string, db: any) {
 // Reusable function for AI macro calculation
 async function calculateMacros(description?: string, imageUrl?: string): Promise<{ macros?: string; explanation?: string; error?: string; generatedDescription?: string }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel(
+      { 
+        model: "gemini-2.0-flash-lite",
+        generationConfig: {
+          temperature: 0.3,
+        },
+      },
+      {
+        customHeaders: {
+          "x-goog-api-location": "global",
+        },
+      }
+    );
     
     let prompt = `Please analyze this food ${description ? `description: "${description}"` : 'image'} and provide macronutrient information in a consistent format. `;
     
@@ -218,9 +230,46 @@ CRITICAL REQUIREMENTS:
       }
     }
 
-    const result = await model.generateContent(contentParts);
-    const response = await result.response;
-    const text = response.text();
+    // Retry mechanism for API calls
+    const MAX_RETRIES = 3;
+    let lastError: Error | null = null;
+    let result: any = null;
+    let response: any = null;
+    let text: string = "";
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        result = await model.generateContent(contentParts);
+        response = await result.response;
+        text = response.text();
+        break; // Success, exit retry loop
+      } catch (apiError) {
+        lastError = apiError instanceof Error ? apiError : new Error(String(apiError));
+        
+        // Don't retry on certain errors (API key, quota issues)
+        if (lastError.message.includes("API_KEY") || 
+            lastError.message.includes("quota") || 
+            lastError.message.includes("limit")) {
+          throw lastError; // Throw immediately, don't retry
+        }
+
+        // If this is the last attempt, throw the error
+        if (attempt === MAX_RETRIES) {
+          throw new Error(
+            `AI calculation failed after ${MAX_RETRIES} attempts. ${lastError.message}. Please try again.`
+          );
+        }
+
+        // Calculate exponential backoff delay (1s, 2s, 4s)
+        const delayMs = Math.pow(2, attempt - 1) * 1000;
+        
+        // Log retry attempt (this will be visible in server logs)
+        console.log(`AI API call failed (attempt ${attempt}/${MAX_RETRIES}). Retrying in ${delayMs}ms...`, lastError.message);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
 
     // console.log("AI response:", text);
     
@@ -286,19 +335,27 @@ CRITICAL REQUIREMENTS:
     
     // Provide specific error messages based on the error type
     if (error instanceof Error) {
+      // Check if retries were attempted
+      const retriesAttempted = error.message.includes("failed after");
+      
       if (error.message.includes("API_KEY")) {
         return { error: "AI service configuration error. Please contact support." };
       } else if (error.message.includes("quota") || error.message.includes("limit")) {
         return { error: "AI service quota exceeded. Please try again later." };
       } else if (error.message.includes("network") || error.message.includes("fetch")) {
-        return { error: "Network error connecting to AI service. Please check your connection and try again." };
+        const retryMsg = retriesAttempted ? " We attempted to retry the request multiple times." : "";
+        return { error: `Network error connecting to AI service.${retryMsg} Please check your connection and try again.` };
       } else if (error.message.includes("timeout")) {
-        return { error: "AI calculation timed out. Please try again with a shorter description." };
+        const retryMsg = retriesAttempted ? " We attempted to retry the request multiple times." : "";
+        return { error: `AI calculation timed out.${retryMsg} Please try again with a shorter description.` };
+      } else if (retriesAttempted) {
+        // Error message already includes retry information
+        return { error: error.message };
       }
     }
     
     return { 
-      error: "AI calculation failed. Please try again or provide a more detailed description." 
+      error: "AI calculation failed after multiple retry attempts. Please try again or provide a more detailed description." 
     };
   }
 }
