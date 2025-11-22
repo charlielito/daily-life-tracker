@@ -118,7 +118,7 @@ async function incrementAiUsage(userId: string, db: any) {
 }
 
 // Reusable function for AI macro calculation
-async function calculateMacros(description?: string, imageUrl?: string): Promise<{ macros?: string; explanation?: string; error?: string; generatedDescription?: string }> {
+async function calculateMacros(description?: string, imageUrl?: string, locale: string = 'en'): Promise<{ macros?: string; explanation?: string; error?: string; generatedDescription?: string }> {
   try {
     const model = genAI.getGenerativeModel(
       { 
@@ -188,6 +188,13 @@ CRITICAL REQUIREMENTS:
 - Consider both the natural water content of foods and any beverages included.
 - Round all values to reasonable whole numbers
 - If no description was provided, generate a short description of what you see in the image`;
+
+    // Add language instruction at the end
+    if (locale === 'es') {
+      prompt += `\n\nIMPORTANT: You must respond entirely in Spanish. All text, descriptions, and explanations in the JSON response must be in Spanish.`;
+    } else {
+      prompt += `\n\nIMPORTANT: You must respond entirely in English. All text, descriptions, and explanations in the JSON response must be in English.`;
+    }
 
     // console.log("AI prompt:", prompt);
     
@@ -387,8 +394,8 @@ export const macrosRouter = createTRPCRouter({
       // Check AI usage limits
       await checkAiUsageLimit(userId, ctx.db);
 
-      // Calculate macros using AI
-      const calculationResult = await calculateMacros(input.description, input.imageUrl);
+      // Calculate macros using AI with locale support
+      const calculationResult = await calculateMacros(input.description, input.imageUrl, ctx.locale);
 
       // Handle AI calculation errors
       if (calculationResult.error) {
@@ -469,7 +476,7 @@ export const macrosRouter = createTRPCRouter({
         // Check AI usage limits before recalculation
         await checkAiUsageLimit(userId, ctx.db);
         
-        const calculationResult = await calculateMacros(input.description, input.imageUrl);
+        const calculationResult = await calculateMacros(input.description, input.imageUrl, ctx.locale);
         if (calculationResult.error) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",

@@ -1,9 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { api } from "@/utils/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,15 +11,24 @@ import { Progress } from "@/components/ui/progress";
 import { WeightPrompt } from "@/components/ui/weight-prompt";
 import { Input } from "@/components/ui/input";
 import { format, addDays, subDays } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import Image from "next/image";
 import { AlertTriangle, Crown, Zap, Flame, User, Info, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { calculateAge } from "@/utils/ageUtils";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useTranslations } from "@/utils/useTranslations";
+import { useDateLocale } from "@/utils/useDateLocale";
+import { LocalizedLink } from "@/components/ui/localized-link";
+import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useLocalizedRouter();
+  const { t } = useTranslations("dashboard");
+  const { t: tCommon } = useTranslations("common");
+  const dateLocale = useDateLocale();
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
@@ -162,7 +169,7 @@ export default function DashboardPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-lg">Loading your dashboard...</div>
+          <div className="text-lg">{t("loadingDashboard")}</div>
         </div>
       </div>
     );
@@ -179,11 +186,13 @@ export default function DashboardPage() {
         {/* Header with subscription info */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">
-              Welcome back, {session.user?.name || session.user?.email}!
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {format(selectedDate, "EEEE, MMMM do, yyyy")}
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {t("welcomeBack", { name: session.user?.name || session.user?.email?.split('@')[0] || "User" })} 👋
+              </h1>
+            </div>
+            <p className="text-sm md:text-base text-gray-600">
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })} • {t("trackDailyHealth")}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -193,30 +202,30 @@ export default function DashboardPage() {
                 {subscriptionStatus.subscriptionStatus === 'free' ? (
                   <Badge variant="secondary" className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    Free Plan
+                    {t("freePlan")}
                   </Badge>
                 ) : subscriptionStatus.isUnlimited ? (
                   <Badge variant="default" className="flex items-center gap-1 bg-purple-600">
                     <Crown className="h-3 w-3" />
-                    Unlimited
+                    {t("unlimited")}
                   </Badge>
                 ) : (
                   <Badge variant="default" className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500">
                     <Crown className="h-3 w-3" />
-                    Premium
+                    {t("premium")}
                   </Badge>
                 )}
               </div>
             )}
             <Button variant="outline" onClick={() => signOut()}>
-              Sign Out
+              {t("signOut")}
             </Button>
           </div>
         </div>
 
         {/* Loading content */}
         <div className="flex items-center justify-center py-16">
-          <div className="text-lg text-gray-600">Loading your health data...</div>
+          <div className="text-lg text-gray-600">{t("loadingHealthData")}</div>
         </div>
       </div>
     );
@@ -261,47 +270,48 @@ export default function DashboardPage() {
           <div>
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Welcome back, {session.user?.name || session.user?.email?.split('@')[0]}! 👋
+                {t("welcomeBack", { name: session.user?.name || session.user?.email?.split('@')[0] || "User" })} 👋
               </h1>
               {subscriptionStatus && (
                 <Badge variant={isUnlimited ? "default" : "secondary"} className="flex items-center gap-1">
                   {isUnlimited ? (
                     <>
                       <Crown className="h-3 w-3" />
-                      Premium
+                      {t("premium")}
                     </>
                   ) : (
                     <>
                       <Zap className="h-3 w-3" />
-                      Free
+                      {t("free")}
                     </>
                   )}
                 </Badge>
               )}
             </div>
             <p className="text-sm md:text-base text-gray-600">
-              {format(selectedDate, "EEEE, MMMM d, yyyy")} • Track your daily health
+              {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })} • {t("trackDailyHealth")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/calendar">
+            <LanguageSwitcher />
+            <LocalizedLink href="/calendar">
               <Button variant="outline" size="sm" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">Calendar</span>
+                <span className="hidden sm:inline">{t("calendar")}</span>
               </Button>
-            </Link>
-            <Link href="/subscription">
+            </LocalizedLink>
+            <LocalizedLink href="/subscription">
               <Button variant="outline" size="sm">
-                <span className="hidden sm:inline">{isUnlimited ? "Manage Plan" : "Upgrade"}</span>
-                <span className="sm:hidden">{isUnlimited ? "Plan" : "Upgrade"}</span>
+                <span className="hidden sm:inline">{isUnlimited ? t("managePlan") : t("upgrade")}</span>
+                <span className="sm:hidden">{isUnlimited ? t("plan") : t("upgrade")}</span>
               </Button>
-            </Link>
+            </LocalizedLink>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => signOut({ callbackUrl: "/" })}
             >
-              Sign Out
+              {t("signOut")}
             </Button>
           </div>
         </div>
@@ -314,26 +324,26 @@ export default function DashboardPage() {
                 <AlertTriangle className={`h-5 w-5 mt-0.5 ${limitReached ? 'text-red-500' : 'text-amber-500'}`} />
                 <div className="flex-1">
                   <h3 className={`font-semibold ${limitReached ? 'text-red-800' : 'text-amber-800'}`}>
-                    {limitReached ? 'Usage Limit Reached' : 'Usage Warning'}
+                    {limitReached ? t("usageLimitReached") : t("usageWarning")}
                   </h3>
                   <p className={`text-sm mt-1 ${limitReached ? 'text-red-700' : 'text-amber-700'}`}>
                     {limitReached 
-                      ? 'You\'ve reached your monthly limits. Upgrade to continue using AI features and image uploads.'
-                      : 'You\'re approaching your monthly usage limits. Consider upgrading for unlimited access.'
+                      ? t("limitReachedMessage")
+                      : t("usageWarningMessage")
                     }
                   </p>
                   <div className="mt-3 space-y-2">
                     {!isUnlimited && subscriptionStatus && (
                       <>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium w-20">AI Usage:</span>
+                          <span className="text-xs font-medium w-20">{t("aiUsage")}</span>
                           <Progress value={aiUsagePercent} className="flex-1 h-2" />
                           <span className="text-xs w-16 text-right">
                             {subscriptionStatus.monthlyAiUsage}/{subscriptionStatus.limits.aiCalculations}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium w-20">Uploads:</span>
+                          <span className="text-xs font-medium w-20">{t("uploads")}</span>
                           <Progress value={uploadUsagePercent} className="flex-1 h-2" />
                           <span className="text-xs w-16 text-right">
                             {subscriptionStatus.monthlyUploads}/{subscriptionStatus.limits.uploads}
@@ -343,11 +353,11 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-                <Link href="/subscription">
+                <LocalizedLink href="/subscription">
                   <Button size="sm">
-                    Upgrade Now
+                    {t("upgradeNow")}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             </CardContent>
           </Card>
@@ -375,7 +385,7 @@ export default function DashboardPage() {
               
               {!isSelectedDateToday && (
                 <Button variant="ghost" size="sm" onClick={goToToday}>
-                  Today
+                  {tCommon("today")}
                 </Button>
               )}
             </div>
@@ -395,18 +405,18 @@ export default function DashboardPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-orange-700 flex items-center gap-2">
                 <User className="h-4 w-4" />
-                Complete Your Profile
+                {t("completeProfile")}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <p className="text-xs text-orange-600 mb-2">
-                Set up your birth date, gender, height, and activity level to get personalized calorie calculations
+                {t("completeProfileDesc")}
               </p>
-              <Link href="/profile">
+              <LocalizedLink href="/profile">
                 <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 text-white">
-                  Complete Profile
+                  {t("completeProfileButton")}
                 </Button>
-              </Link>
+                  </LocalizedLink>
             </CardContent>
           </Card>
         )}
@@ -417,7 +427,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-orange-800">
                 <Flame className="h-6 w-6" />
-                Daily Calorie Balance
+                {t("dailyCalorieBalance")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -427,22 +437,22 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-4 gap-2 md:gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-xl md:text-2xl font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
-                      <div className="text-xs text-gray-600">Consumed</div>
+                      <div className="text-xs text-gray-600">{t("consumed")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xl md:text-2xl font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
-                      <div className="text-xs text-gray-600">Burned Total</div>
+                      <div className="text-xs text-gray-600">{t("burnedTotal")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xl md:text-2xl font-bold text-purple-600">{calorieBalance.caloriesBurnedFromActivity}</div>
-                      <div className="text-xs text-gray-600">From Exercise</div>
+                      <div className="text-xs text-gray-600">{t("fromExercise")}</div>
                     </div>
                     <div className="text-center">
                       <div className={`text-xl md:text-2xl font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
                         {calorieBalance.isDeficit ? '-' : '+'}{Math.abs(calorieBalance.calorieBalance)}
                       </div>
                       <div className="text-xs text-gray-600">
-                        {calorieBalance.isDeficit ? 'Deficit' : 'Surplus'}
+                        {calorieBalance.isDeficit ? t("deficit") : t("surplus")}
                       </div>
                     </div>
                   </div>
@@ -453,13 +463,13 @@ export default function DashboardPage() {
                         : 'bg-red-100 text-red-800'
                     }`}>
                       {calorieBalance.isDeficit 
-                        ? "🎯 Calorie Deficit - Great for weight loss!" 
-                        : "⚠️ Calorie Surplus - Consider more activity!"}
+                        ? t("calorieDeficit")
+                        : t("calorieSurplus")}
                     </div>
                   </div>
                   <div className="text-center mt-3">
                     <div className="text-xs text-gray-500">
-                      BMR: {calorieBalance.bmr} cal/day • TDEE: {calorieBalance.tdee} cal/day
+                      {t("bmrTdeeInfo", { bmr: calorieBalance.bmr, tdee: calorieBalance.tdee })}
                     </div>
                   </div>
                 </div>
@@ -475,7 +485,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-blue-800 text-sm">
                   <User className="h-4 w-4" />
-                  Your Profile
+                  {t("yourProfile")}
                 </CardTitle>
                 <div className="flex items-center gap-1">
                   <Button 
@@ -487,20 +497,20 @@ export default function DashboardPage() {
                     {isProfileExpanded ? (
                       <>
                         <ChevronUp className="h-3 w-3 mr-1" />
-                        Hide
+                        {t("hide")}
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-3 w-3 mr-1" />
-                        Show
+                        {t("show")}
                       </>
                     )}
                   </Button>
-                  <Link href="/profile">
+                  <LocalizedLink href="/profile">
                     <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 text-xs h-7 px-2">
-                      Edit
+                      {t("edit")}
                     </Button>
-                  </Link>
+                  </LocalizedLink>
                 </div>
               </div>
             </CardHeader>
@@ -509,31 +519,31 @@ export default function DashboardPage() {
                 <div className="space-y-1">
                   {userProfile.birthDate && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-xs">Age:</span>
-                      <span className="font-medium text-xs">{calculateAge(userProfile.birthDate)} years</span>
+                      <span className="text-gray-600 text-xs">{t("age")}:</span>
+                      <span className="font-medium text-xs">{calculateAge(userProfile.birthDate)} {t("years")}</span>
                     </div>
                   )}
                   {userProfile.gender && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-xs">Gender:</span>
+                      <span className="text-gray-600 text-xs">{t("gender")}:</span>
                       <span className="font-medium text-xs capitalize">{userProfile.gender}</span>
                     </div>
                   )}
                   {userProfile.heightCm && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-xs">Height:</span>
+                      <span className="text-gray-600 text-xs">{t("height")}:</span>
                       <span className="font-medium text-xs">{userProfile.heightCm} cm</span>
                     </div>
                   )}
                   {userProfile.activityLevel && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-xs">Activity:</span>
+                      <span className="text-gray-600 text-xs">{t("activity")}:</span>
                       <span className="font-medium text-xs capitalize">{userProfile.activityLevel.replace(/_/g, ' ')}</span>
                     </div>
                   )}
                   {(!userProfile.birthDate || !userProfile.gender || !userProfile.heightCm || !userProfile.activityLevel) && (
                     <div className="text-xs text-blue-600 bg-blue-50 p-1.5 rounded mt-1">
-                      ⚠️ Complete profile for accurate calculations
+                      {t("completeProfileWarning")}
                     </div>
                   )}
                 </div>
@@ -550,30 +560,30 @@ export default function DashboardPage() {
         <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="flex items-center gap-2 text-emerald-800 text-sm">
-              🍽️ {isSelectedDateToday ? "Today's" : format(selectedDate, "MMM d")} Total Macros
+              🍽️ {isSelectedDateToday ? t("todaysTotalMacros") : t("totalMacrosForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 pb-3">
             <div className="grid grid-cols-5 gap-2">
               <div className="text-center">
                 <div className="text-lg font-bold text-blue-600">{Math.round(totalMacros.calories)}</div>
-                <div className="text-xs text-gray-600">calories</div>
+                <div className="text-xs text-gray-600">{t("calories")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-green-600">{Math.round(totalMacros.protein)}g</div>
-                <div className="text-xs text-gray-600">protein</div>
+                <div className="text-xs text-gray-600">{t("protein")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-yellow-600">{Math.round(totalMacros.carbs)}g</div>
-                <div className="text-xs text-gray-600">carbs</div>
+                <div className="text-xs text-gray-600">{t("carbs")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-red-600">{Math.round(totalMacros.fat)}g</div>
-                <div className="text-xs text-gray-600">fat</div>
+                <div className="text-xs text-gray-600">{t("fat")}</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-cyan-600">{Math.round(totalMacros.water)}ml</div>
-                <div className="text-xs text-gray-600">water</div>
+                <div className="text-xs text-gray-600">{t("water")}</div>
               </div>
             </div>
           </CardContent>
@@ -583,64 +593,64 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-700">Meals Logged</CardTitle>
+              <CardTitle className="text-sm font-medium text-green-700">{t("mealsLogged")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-green-800">{todayMacros.length}</div>
               <p className="text-xs text-green-600 mt-1">
-                {isSelectedDateToday ? "entries today" : `entries on ${format(selectedDate, "MMM d")}`}
+                {isSelectedDateToday ? t("entriesToday") : t("entriesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
-                <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                <LocalizedLink href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                    🍽️ Log Meal
+                    {t("logMeal")}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-purple-700">Health Entries</CardTitle>
+              <CardTitle className="text-sm font-medium text-purple-700">{t("healthEntries")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-purple-800">{todayIntestinal.length}</div>
               <p className="text-xs text-purple-600 mt-1">
-                {isSelectedDateToday ? "logs today" : `logs on ${format(selectedDate, "MMM d")}`}
+                {isSelectedDateToday ? t("logsToday") : t("logsOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
-                <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                <LocalizedLink href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                    🏥 Log Health
+                    {t("logHealth")}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-amber-700">Activities</CardTitle>
+              <CardTitle className="text-sm font-medium text-amber-700">{t("activities")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-amber-800">{todayActivities.length}</div>
               <p className="text-xs text-amber-600 mt-1">
-                {isSelectedDateToday ? "exercises today" : `exercises on ${format(selectedDate, "MMM d")}`}
+                {isSelectedDateToday ? t("exercisesToday") : t("exercisesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
               </p>
               <div className="mt-3">
-                <Link href={isSelectedDateToday ? "/activity" : `/activity?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                <LocalizedLink href={isSelectedDateToday ? "/activity" : `/activity?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white">
-                    🏃‍♂️ Log Activity
+                    {t("logActivity")}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-orange-700">Current Weight</CardTitle>
+              <CardTitle className="text-sm font-medium text-orange-700">{t("currentWeight")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-orange-800">
@@ -648,10 +658,10 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-orange-600 mt-1">
                 {isLatestWeight 
-                  ? `from ${format(convertUTCToLocalDisplay(new Date(latestWeight!.localDate)), "MMM d")}`
+                  ? `${t("from")} ${formatDate(convertUTCToLocalDisplay(new Date(latestWeight!.localDate)), "MMM d", { locale: dateLocale })}`
                   : todayWeight 
-                    ? isSelectedDateToday ? "today's weight" : `weight on ${format(selectedDate, "MMM d")}`
-                    : "no data"
+                    ? isSelectedDateToday ? t("todaysWeight") : t("weightOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })
+                    : t("noData")
                 }
               </p>
               <div className="flex flex-col gap-1 mt-2">
@@ -662,18 +672,18 @@ export default function DashboardPage() {
                     onClick={() => setShowWeightPrompt(true)}
                     className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
                   >
-                    Add today's weight
+                    {t("addTodaysWeight")}
                   </Button>
                 )}
-                <Link href={isSelectedDateToday ? "/weight" : `/weight?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                <LocalizedLink href={isSelectedDateToday ? "/weight" : `/weight?date=${format(selectedDate, "yyyy-MM-dd")}`}>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700"
                   >
-                    View All Entries
+                    {t("viewAllEntries")}
                   </Button>
-                </Link>
+                </LocalizedLink>
               </div>
             </CardContent>
           </Card>
@@ -685,24 +695,24 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Meals</CardTitle>
-                <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
-                  <Button variant="ghost" size="sm">View All</Button>
-                </Link>
+                <CardTitle>{t("recentMeals")}</CardTitle>
+                <LocalizedLink href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                  <Button variant="ghost" size="sm">{t("viewAll")}</Button>
+                </LocalizedLink>
               </div>
-              <CardDescription>Your latest food entries</CardDescription>
+              <CardDescription>{t("yourLatestFoodEntries")}</CardDescription>
             </CardHeader>
             <CardContent>
               {macrosLoading ? (
-                <p className="text-gray-500">Loading...</p>
+                <p className="text-gray-500">{t("loading")}</p>
               ) : todayMacros.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-500 mb-2">
-                    {isSelectedDateToday ? "No meals logged today" : `No meals logged on ${format(selectedDate, "MMM d")}`}
+                    {isSelectedDateToday ? t("noMealsLoggedToday") : t("noMealsLoggedOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
                   </p>
-                  <Link href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
-                    <Button size="sm">Log Your First Meal</Button>
-                  </Link>
+                  <LocalizedLink href={isSelectedDateToday ? "/food" : `/food?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                    <Button size="sm">{t("logYourFirstMeal")}</Button>
+                  </LocalizedLink>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -743,25 +753,25 @@ export default function DashboardPage() {
                                   <div className="font-medium text-green-700">
                                     {Math.round(entry.calculatedMacros.protein)}g
                                   </div>
-                                  <div className="text-[10px] text-green-600">protein</div>
+                                  <div className="text-[10px] text-green-600">{t("protein")}</div>
                                 </div>
                                 <div className="text-center bg-yellow-50 px-1 py-1 rounded">
                                   <div className="font-medium text-yellow-700">
                                     {Math.round(entry.calculatedMacros.carbs)}g
                                   </div>
-                                  <div className="text-[10px] text-yellow-600">carbs</div>
+                                  <div className="text-[10px] text-yellow-600">{t("carbs")}</div>
                                 </div>
                                 <div className="text-center bg-red-50 px-1 py-1 rounded">
                                   <div className="font-medium text-red-700">
                                     {Math.round(entry.calculatedMacros.fat)}g
                                   </div>
-                                  <div className="text-[10px] text-red-600">fat</div>
+                                  <div className="text-[10px] text-red-600">{t("fat")}</div>
                                 </div>
                                 <div className="text-center bg-cyan-50 px-1 py-1 rounded">
                                   <div className="font-medium text-cyan-700">
                                     {Math.round(entry.calculatedMacros.water || 0)}ml
                                   </div>
-                                  <div className="text-[10px] text-cyan-600">water</div>
+                                  <div className="text-[10px] text-cyan-600">{t("water")}</div>
                                 </div>
                               </div>
                               
@@ -778,14 +788,14 @@ export default function DashboardPage() {
                                     className="text-[10px] h-6 px-2"
                                   >
                                     <Info className="h-3 w-3 mr-1" />
-                                    Details
+                                    {t("details")}
                                   </Button>
                                 </div>
                               )}
                             </div>
                           ) : (
                             <div className="text-xs text-gray-500 italic mt-1">
-                              Calculating macros...
+                              {t("calculatingMacros")}
                             </div>
                           )}
                         </div>
@@ -801,24 +811,24 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Health Entries</CardTitle>
-                <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
-                  <Button variant="ghost" size="sm">View All</Button>
-                </Link>
+                <CardTitle>{t("recentHealthEntries")}</CardTitle>
+                <LocalizedLink href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                  <Button variant="ghost" size="sm">{t("viewAll")}</Button>
+                </LocalizedLink>
               </div>
-              <CardDescription>Your latest health logs</CardDescription>
+              <CardDescription>{t("yourLatestHealthLogs")}</CardDescription>
             </CardHeader>
             <CardContent>
               {intestinalLoading ? (
-                <p className="text-gray-500">Loading...</p>
+                <p className="text-gray-500">{t("loading")}</p>
               ) : todayIntestinal.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-500 mb-2">
-                    {isSelectedDateToday ? "No health entries today" : `No health entries on ${format(selectedDate, "MMM d")}`}
+                    {isSelectedDateToday ? t("noHealthEntriesToday") : t("noHealthEntriesOnDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
                   </p>
-                  <Link href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
-                    <Button size="sm" variant="secondary">Log First Entry</Button>
-                  </Link>
+                  <LocalizedLink href={isSelectedDateToday ? "/health" : `/health?date=${format(selectedDate, "yyyy-MM-dd")}`}>
+                    <Button size="sm" variant="secondary">{t("logFirstEntry")}</Button>
+                  </LocalizedLink>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -828,7 +838,7 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
-                              <p className="font-medium text-sm">Bristol Scale Type {entry.consistency}</p>
+                              <p className="font-medium text-sm">{t("bristolScaleType", { type: entry.consistency })}</p>
                               <p className="text-xs text-gray-500">
                                 {format(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a")}
                               </p>
@@ -849,11 +859,11 @@ export default function DashboardPage() {
                           <div className="flex gap-2 mt-2">
                             <div className="text-center bg-gray-50 px-2 py-1 rounded text-xs">
                               <div className="font-medium text-gray-700">{entry.color}</div>
-                              <div className="text-[10px] text-gray-600">color</div>
+                              <div className="text-[10px] text-gray-600">{t("color")}</div>
                             </div>
                             <div className="text-center bg-red-50 px-2 py-1 rounded text-xs">
                               <div className="font-medium text-red-700">{entry.painLevel}/10</div>
-                              <div className="text-[10px] text-red-600">pain</div>
+                              <div className="text-[10px] text-red-600">{t("pain")}</div>
                             </div>
                           </div>
                         </div>
