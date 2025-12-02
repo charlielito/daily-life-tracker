@@ -272,6 +272,12 @@ export default function WeightPage() {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Calculate offset to align first day with Monday (0 = Monday, 6 = Sunday)
+  // getDay() returns 0 for Sunday, 1 for Monday, etc.
+  // We want Monday (1) to be 0, so we convert: (dayOfWeek - 1 + 7) % 7
+  const firstDayOfWeek = monthStart.getDay();
+  const offset = (firstDayOfWeek - 1 + 7) % 7;
 
   // Create a map of weight entries by date for easy lookup
   const weightEntriesMap = new Map(
@@ -356,11 +362,16 @@ export default function WeightPage() {
             <div className="text-center py-8">{t("loadingWeightEntries")}</div>
           ) : (
             <div className="grid grid-cols-7 gap-1">
-              {/* Day headers */}
-              {[t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")].map(day => (
+              {/* Day headers - starting with Monday */}
+              {[t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat"), t("sun")].map(day => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
                   {day}
                 </div>
+              ))}
+              
+              {/* Empty cells for days before the first day of the month (to align with Monday) */}
+              {Array.from({ length: offset }).map((_, index) => (
+                <div key={`empty-${index}`} className="p-2 min-h-[80px]"></div>
               ))}
               
               {/* Calendar days */}

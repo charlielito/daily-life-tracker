@@ -104,6 +104,12 @@ export default function CalendarPage() {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Calculate offset to align first day with Monday (0 = Monday, 6 = Sunday)
+  // getDay() returns 0 for Sunday, 1 for Monday, etc.
+  // We want Monday (1) to be 0, so we convert: (dayOfWeek - 1 + 7) % 7
+  const firstDayOfWeek = monthStart.getDay();
+  const offset = (firstDayOfWeek - 1 + 7) % 7;
 
   // Convert monthData array to a map for easier lookup
   const dayDataMap = monthData.reduce((acc, day) => {
@@ -211,11 +217,16 @@ export default function CalendarPage() {
             <div className="text-center py-8">{t("loadingCalendarData")}</div>
           ) : (
             <div className="grid grid-cols-7 gap-2">
-              {/* Day headers */}
-              {[t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")].map(day => (
+              {/* Day headers - starting with Monday */}
+              {[t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat"), t("sun")].map(day => (
                 <div key={day} className="p-2 text-center font-medium text-gray-500 text-sm">
                   {day}
                 </div>
+              ))}
+              
+              {/* Empty cells for days before the first day of the month (to align with Monday) */}
+              {Array.from({ length: offset }).map((_, index) => (
+                <div key={`empty-${index}`} className="p-2 min-h-[80px]"></div>
               ))}
               
               {/* Calendar days */}

@@ -44,7 +44,9 @@
     "saving": "Guardando...",
     "deleteEntry": "Eliminar Entrada",
     "deleteConfirmation": "¿Estás seguro de que quieres eliminar esta entrada? Esta acción no se puede deshacer.",
-    "actionCannotBeUndone": "Esta acción no se puede deshacer."
+    "actionCannotBeUndone": "Esta acción no se puede deshacer.",
+    "show": "Mostrar",
+    "hide": "Ocultar"
   },
   "dashboard": {
     "welcomeBack": "¡Bienvenido de nuevo, {name}!",
@@ -189,7 +191,24 @@
     "foodDescriptionPlaceholder": "Opcional: Agrega detalles sobre tu comida, o deja que la IA analice la foto",
     "foodDescriptionRequired": "La descripción es requerida o sube una foto",
     "foodPhotoLabel": "Foto de Comida ",
-    "deleteMealEntry": "¿Estás seguro de que quieres eliminar esta entrada de comida? Esta acción no se puede deshacer."
+    "deleteMealEntry": "¿Estás seguro de que quieres eliminar esta entrada de comida? Esta acción no se puede deshacer.",
+    "savedMeals": "Comidas Guardadas",
+    "saveMeal": "Guardar Comida",
+    "saveMealAs": "Guardar Comida Como",
+    "mealName": "Nombre de la Comida",
+    "mealNamePlaceholder": "ej., Desayuno Común",
+    "mealNameRequired": "Por favor ingresa un nombre para esta comida",
+    "mealSaved": "Comida guardada exitosamente",
+    "mealLogged": "Comida registrada exitosamente",
+    "useSavedMeal": "Usar Comida Guardada",
+    "deleteSavedMeal": "Eliminar Comida Guardada",
+    "noSavedMeals": "Aún no hay comidas guardadas. Guarda comidas de tus entradas para reutilizarlas más tarde.",
+    "createFromSavedMeal": "Crear Entrada desde Comida Guardada",
+    "confirmDeleteSavedMeal": "¿Estás seguro de que quieres eliminar esta comida guardada?",
+    "savingMeal": "Guardando comida...",
+    "creatingEntry": "Creando entrada...",
+    "savedMealSingular": "comida guardada",
+    "savedMealsPlural": "comidas guardadas"
   },
   "activity": {
     "title": "Seguimiento de Actividad",
