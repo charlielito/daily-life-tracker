@@ -46,6 +46,7 @@ model User {
   intestinalEntries IntestinalEntry[]
   weightEntries     WeightEntry[]
   activityEntries   ActivityEntry[]
+  savedMeals        SavedMeal[]
   
   @@map("users")
   @@schema("local_time")
@@ -123,4 +124,31 @@ model ActivityEntry {
   
   @@map("activity_entries")
   @@schema("local_time")
-} 
+}
+
+model KeepAlive {
+  id     BigInt  @id @default(autoincrement())
+  name   String? @default("")
+  random String? @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  
+  @@map("keep-alive")
+  @@schema("local_time")
+}
+
+model SavedMeal {
+  id                    String   @id @default(cuid())
+  userId                String
+  name                  String   // User-friendly name (e.g., "Common Breakfast")
+  description           String   // Meal description
+  imageUrl              String?  // Optional image URL
+  calculatedMacros      String?  // JSON stored as string (same format as MacroEntry)
+  calculationExplanation String? // AI explanation (JSON stored as string)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("saved_meals")
+  @@schema("local_time")
+}

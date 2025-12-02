@@ -49,6 +49,10 @@ A modern web application for tracking daily health metrics including nutrition, 
 - **New**: image_url (optional image for weight entries)
 - **Unique constraint**: One weight entry per user per day
 
+### SavedMeal
+- id, user_id, name, description, image_url?, calculated_macros (JSON), calculation_explanation (JSON), created_at, updated_at
+- **Purpose**: Save frequently used meals for quick re-logging without AI recalculation
+
 ## 💳 Subscription System
 
 ### Free Tier
@@ -113,6 +117,7 @@ A modern web application for tracking daily health metrics including nutrition, 
 - [x] ✅ **Water consumption tracking in macro calculations**
 - [x] ✅ **Comprehensive calendar view aggregating all health data**
 - [x] ✅ **Day details modal with timeline and calorie balance**
+- [x] ✅ **Saved meals feature for quick meal re-logging**
 
 ### Phase 4 (Future)
 - [ ] 🚧 Data visualization and trends with charts
@@ -301,9 +306,11 @@ STRIPE_PREMIUM_PRICE_ID="price_..."  # Create this in Stripe Dashboard
 5. AI calculates macros automatically using Google Gemini (enhanced with image analysis)
 6. **Water Calculation**: AI estimates water content in milliliters from food/drinks
 7. **Usage Increment**: System tracks AI usage for billing (new!)
-8. User can edit/delete entries with full form modal
-9. User can view daily summary with macro totals including water intake
-10. Recent meals shown with calculated nutrition info, water content, and thumbnails
+8. **Save Meals**: Users can save any meal entry to a personal library for quick reuse (new!)
+9. **Quick Logging**: Click saved meals to instantly create entries without AI recalculation
+10. User can edit/delete entries with full form modal
+11. User can view daily summary with macro totals including water intake
+12. Recent meals shown with calculated nutrition info, water content, and thumbnails
 
 ### Intestinal Health Flow
 1. Navigate to "Health Monitoring" from dashboard or `/health`

@@ -44,7 +44,9 @@
     "saving": "Saving...",
     "deleteEntry": "Delete Entry",
     "deleteConfirmation": "Are you sure you want to delete this entry? This action cannot be undone.",
-    "actionCannotBeUndone": "This action cannot be undone."
+    "actionCannotBeUndone": "This action cannot be undone.",
+    "show": "Show",
+    "hide": "Hide"
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {name}!",
@@ -189,7 +191,24 @@
     "foodDescriptionPlaceholder": "Optional: Add details about your meal, or let AI analyze the photo",
     "foodDescriptionRequired": "Description is required or upload a photo",
     "foodPhotoLabel": "Food Photo ",
-    "deleteMealEntry": "Are you sure you want to delete this meal entry? This action cannot be undone."
+    "deleteMealEntry": "Are you sure you want to delete this meal entry? This action cannot be undone.",
+    "savedMeals": "Saved Meals",
+    "saveMeal": "Save Meal",
+    "saveMealAs": "Save Meal As",
+    "mealName": "Meal Name",
+    "mealNamePlaceholder": "e.g., Common Breakfast",
+    "mealNameRequired": "Please enter a name for this meal",
+    "mealSaved": "Meal saved successfully",
+    "mealLogged": "Meal logged successfully",
+    "useSavedMeal": "Use Saved Meal",
+    "deleteSavedMeal": "Delete Saved Meal",
+    "noSavedMeals": "No saved meals yet. Save meals from your entries to reuse them later.",
+    "createFromSavedMeal": "Create Entry from Saved Meal",
+    "confirmDeleteSavedMeal": "Are you sure you want to delete this saved meal?",
+    "savingMeal": "Saving meal...",
+    "creatingEntry": "Creating entry...",
+    "savedMealSingular": "saved meal",
+    "savedMealsPlural": "saved meals"
   },
   "activity": {
     "title": "Activity Tracking",

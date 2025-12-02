@@ -13,11 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { EditEntryModal } from "@/components/ui/edit-entry-modal";
 import { format } from "date-fns";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Bookmark, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import Image from "next/image";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 import { MacroDetailsModal } from "@/components/ui/macro-details-modal";
 import { Info } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
@@ -43,11 +44,17 @@ export default function FoodPage() {
   
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>();
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [detailsEntry, setDetailsEntry] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [savingEntry, setSavingEntry] = useState<any>(null);
+  const [isSaveMealModalOpen, setIsSaveMealModalOpen] = useState(false);
+  const [mealName, setMealName] = useState("");
+  const [processingSavedMealId, setProcessingSavedMealId] = useState<string | null>(null);
+  const [isSavedMealsExpanded, setIsSavedMealsExpanded] = useState(false);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -83,6 +90,7 @@ export default function FoodPage() {
       });
       setUploadedImageUrl(undefined); // Clear the uploaded image
       utils.macros.getToday.invalidate();
+      setSuccessMessage(t("successMessage")); // "Your meal has been logged and macros calculated."
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); // Hide success message after 3 seconds
     },
@@ -110,6 +118,49 @@ export default function FoodPage() {
     },
     onError: (error) => {
       console.error("Failed to delete macro entry:", error);
+    },
+  });
+
+  const saveMeal = api.macros.saveMeal.useMutation({
+    onSuccess: () => {
+      utils.macros.getSavedMeals.invalidate();
+      setIsSaveMealModalOpen(false);
+      setSavingEntry(null);
+      setMealName("");
+      setSuccessMessage(t("mealSaved")); // "Meal saved successfully"
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    },
+    onError: (error) => {
+      console.error("Failed to save meal:", error);
+    },
+  });
+
+  const { data: savedMeals = [] } = api.macros.getSavedMeals.useQuery(
+    undefined,
+    { enabled: !!session }
+  );
+
+  const deleteSavedMeal = api.macros.deleteSavedMeal.useMutation({
+    onSuccess: () => {
+      utils.macros.getSavedMeals.invalidate();
+    },
+    onError: (error) => {
+      console.error("Failed to delete saved meal:", error);
+    },
+  });
+
+  const createFromSavedMeal = api.macros.createFromSavedMeal.useMutation({
+    onSuccess: () => {
+      utils.macros.getToday.invalidate();
+      setProcessingSavedMealId(null);
+      setSuccessMessage(t("mealLogged")); // Need to add this translation
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    },
+    onError: (error) => {
+      console.error("Failed to create entry from saved meal:", error);
+      setProcessingSavedMealId(null);
     },
   });
 
@@ -155,6 +206,38 @@ export default function FoodPage() {
 
   const handleImageRemove = () => {
     setUploadedImageUrl(undefined);
+  };
+
+  const handleSaveMeal = (entry: any) => {
+    setSavingEntry(entry);
+    setIsSaveMealModalOpen(true);
+  };
+
+  const handleSaveMealSubmit = () => {
+    if (!mealName.trim() || !savingEntry) return;
+    saveMeal.mutate({
+      entryId: savingEntry.id,
+      name: mealName.trim(),
+    });
+  };
+
+  const handleUseSavedMeal = (savedMeal: any) => {
+    if (processingSavedMealId || createFromSavedMeal.isLoading) return;
+    
+    setProcessingSavedMealId(savedMeal.id);
+    const currentDateTime = format(selectedDate, "yyyy-MM-dd'T'HH:mm");
+    const localDateTime = convertLocalToUTCForStorage(currentDateTime);
+    
+    createFromSavedMeal.mutate({
+      savedMealId: savedMeal.id,
+      localDateTime: localDateTime,
+    });
+  };
+
+  const handleDeleteSavedMeal = (savedMealId: string) => {
+    if (window.confirm(t("confirmDeleteSavedMeal"))) {
+      deleteSavedMeal.mutate({ id: savedMealId });
+    }
   };
 
   if (status === "loading") {
@@ -207,8 +290,10 @@ export default function FoodPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Add New Meal Form */}
-        <Card>
+        {/* Left Column */}
+        <div className="space-y-6">
+          {/* Add New Meal Form */}
+          <Card>
           <CardHeader>
             <CardTitle>{t("addNewMeal")}</CardTitle>
             <CardDescription>
@@ -221,7 +306,7 @@ export default function FoodPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">
                   <p className="text-green-600 text-sm">
-                    <strong>{tCommon("success")}</strong> {t("successMessage")}
+                    <strong>{tCommon("success")}</strong> {successMessage}
                   </p>
                 </div>
               )}
@@ -320,7 +405,141 @@ export default function FoodPage() {
           </CardContent>
         </Card>
 
-        {/* Day's Summary */}
+        {/* Saved Meals Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{t("savedMeals")}</CardTitle>
+                <CardDescription>
+                  {savedMeals.length === 0 
+                    ? t("noSavedMeals").split(".")[0]
+                    : `${savedMeals.length} ${savedMeals.length === 1 ? t("savedMealSingular") : t("savedMealsPlural")}`
+                  }
+                </CardDescription>
+              </div>
+              {savedMeals.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSavedMealsExpanded(!isSavedMealsExpanded)}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  {isSavedMealsExpanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      {tCommon("hide")}
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      {tCommon("show")}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          {isSavedMealsExpanded && savedMeals.length > 0 && (
+            <CardContent>
+              <div className="space-y-3">
+                {savedMeals.map((savedMeal: any) => {
+                  const isProcessing = processingSavedMealId === savedMeal.id && createFromSavedMeal.isLoading;
+                  return (
+                  <div
+                    key={savedMeal.id}
+                    className={`border rounded-lg p-3 transition-colors ${
+                      isProcessing 
+                        ? "bg-gray-100 cursor-wait opacity-60" 
+                        : "hover:bg-gray-50 cursor-pointer"
+                    }`}
+                    onClick={() => !isProcessing && handleUseSavedMeal(savedMeal)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{savedMeal.name}</p>
+                              {isProcessing && (
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">{savedMeal.description}</p>
+                            {isProcessing && (
+                              <p className="text-xs text-blue-600 mt-1">{t("creatingEntry")}</p>
+                            )}
+                          </div>
+                          {savedMeal.imageUrl && (
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                              <Image
+                                src={savedMeal.imageUrl}
+                                alt={savedMeal.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSavedMeal(savedMeal.id);
+                        }}
+                        className="ml-2"
+                        title={t("deleteSavedMeal")}
+                        disabled={isProcessing}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {savedMeal.calculatedMacros && (
+                      <div className="grid grid-cols-5 gap-2 mt-2 text-xs">
+                        <div className="text-center bg-blue-50 p-1.5 rounded">
+                          <div className="font-medium text-blue-700">
+                            {Math.round(savedMeal.calculatedMacros.calories)}
+                          </div>
+                          <div className="text-blue-600">{t("cal")}</div>
+                        </div>
+                        <div className="text-center bg-green-50 p-1.5 rounded">
+                          <div className="font-medium text-green-700">
+                            {Math.round(savedMeal.calculatedMacros.protein)}g
+                          </div>
+                          <div className="text-green-600">{t("protein").toLowerCase()}</div>
+                        </div>
+                        <div className="text-center bg-yellow-50 p-1.5 rounded">
+                          <div className="font-medium text-yellow-700">
+                            {Math.round(savedMeal.calculatedMacros.carbs)}g
+                          </div>
+                          <div className="text-yellow-600">{t("carbs").toLowerCase()}</div>
+                        </div>
+                        <div className="text-center bg-red-50 p-1.5 rounded">
+                          <div className="font-medium text-red-700">
+                            {Math.round(savedMeal.calculatedMacros.fat)}g
+                          </div>
+                          <div className="text-red-600">{t("fat").toLowerCase()}</div>
+                        </div>
+                        <div className="text-center bg-cyan-50 p-1.5 rounded">
+                          <div className="font-medium text-cyan-700">
+                            {Math.round(savedMeal.calculatedMacros.water || 0)}ml
+                          </div>
+                          <div className="text-cyan-600">{t("water").toLowerCase()}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+        </div>
+
+        {/* Right Column - Day's Summary */}
         <div className="space-y-6">
           {/* Macro Summary */}
           <Card>
@@ -396,12 +615,23 @@ export default function FoodPage() {
                             )}
                           </div>
                         </div>
-                        {/* Edit/Delete buttons */}
+                        {/* Edit/Save buttons */}
                         <div className="flex gap-1 ml-2">
+                          {entry.calculatedMacros && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSaveMeal(entry)}
+                              title={t("saveMeal")}
+                            >
+                              <Bookmark className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditEntry(entry)}
+                            title={tCommon("edit")}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -500,6 +730,55 @@ export default function FoodPage() {
         explanations={detailsEntry?.calculationExplanation}
         description={detailsEntry?.description || ""}
       />
+
+      {/* Save Meal Dialog */}
+      <Dialog open={isSaveMealModalOpen} onOpenChange={setIsSaveMealModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("saveMealAs")}</DialogTitle>
+            <DialogDescription>
+              {savingEntry?.description}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mealName">{t("mealName")}</Label>
+              <Input
+                id="mealName"
+                placeholder={t("mealNamePlaceholder")}
+                value={mealName}
+                onChange={(e) => setMealName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && mealName.trim()) {
+                    handleSaveMealSubmit();
+                  }
+                }}
+              />
+              {saveMeal.error && (
+                <p className="text-red-500 text-sm">{saveMeal.error.message}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsSaveMealModalOpen(false);
+                setMealName("");
+                setSavingEntry(null);
+              }}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              onClick={handleSaveMealSubmit}
+              disabled={!mealName.trim() || saveMeal.isLoading}
+            >
+              {saveMeal.isLoading ? t("savingMeal") : t("saveMeal")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

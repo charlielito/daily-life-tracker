@@ -582,4 +582,163 @@ export const macrosRouter = createTRPCRouter({
         calculationExplanation: entry.calculationExplanation ? JSON.parse(entry.calculationExplanation as string) : null,
       }));
     }),
+
+  // Save an existing meal entry as a saved meal
+  saveMeal: protectedProcedure
+    .input(
+      z.object({
+        entryId: z.string(),
+        name: z.string().min(1, "Meal name is required"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Fetch the meal entry and verify ownership
+      const entry = await ctx.db.macroEntry.findFirst({
+        where: { id: input.entryId, userId },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or access denied",
+        });
+      }
+
+      // Create saved meal from entry
+      const savedMeal = await ctx.db.savedMeal.create({
+        data: {
+          userId,
+          name: input.name,
+          description: entry.description,
+          imageUrl: entry.imageUrl,
+          calculatedMacros: entry.calculatedMacros,
+          calculationExplanation: entry.calculationExplanation,
+        },
+      });
+
+      // Parse JSON strings back to objects
+      return {
+        ...savedMeal,
+        calculatedMacros: savedMeal.calculatedMacros ? JSON.parse(savedMeal.calculatedMacros as string) : null,
+        calculationExplanation: savedMeal.calculationExplanation ? JSON.parse(savedMeal.calculationExplanation as string) : null,
+      };
+    }),
+
+  // Get all saved meals for the current user
+  getSavedMeals: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      const savedMeals = await ctx.db.savedMeal.findMany({
+        where: { userId },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      // Parse JSON strings back to objects
+      return savedMeals.map((meal: any) => ({
+        ...meal,
+        calculatedMacros: meal.calculatedMacros ? JSON.parse(meal.calculatedMacros as string) : null,
+        calculationExplanation: meal.calculationExplanation ? JSON.parse(meal.calculationExplanation as string) : null,
+      }));
+    }),
+
+  // Delete a saved meal
+  deleteSavedMeal: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Verify the saved meal belongs to the user
+      const savedMeal = await ctx.db.savedMeal.findFirst({
+        where: { id: input.id, userId },
+      });
+
+      if (!savedMeal) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Saved meal not found or access denied",
+        });
+      }
+
+      await ctx.db.savedMeal.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
+    }),
+
+  // Create a new meal entry from a saved meal (reuses macros, no AI call)
+  createFromSavedMeal: protectedProcedure
+    .input(
+      z.object({
+        savedMealId: z.string(),
+        localDateTime: z.date(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user?.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Fetch the saved meal and verify ownership
+      const savedMeal = await ctx.db.savedMeal.findFirst({
+        where: { id: input.savedMealId, userId },
+      });
+
+      if (!savedMeal) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Saved meal not found or access denied",
+        });
+      }
+
+      // Create new entry using saved meal data (no AI calculation)
+      const entry = await ctx.db.macroEntry.create({
+        data: {
+          userId,
+          description: savedMeal.description,
+          imageUrl: savedMeal.imageUrl,
+          localDateTime: input.localDateTime,
+          calculatedMacros: savedMeal.calculatedMacros,
+          calculationExplanation: savedMeal.calculationExplanation,
+        },
+      });
+
+      // Parse JSON strings back to objects
+      return {
+        ...entry,
+        calculatedMacros: entry.calculatedMacros ? JSON.parse(entry.calculatedMacros as string) : null,
+        calculationExplanation: entry.calculationExplanation ? JSON.parse(entry.calculationExplanation as string) : null,
+      };
+    }),
 }); 
