@@ -12,8 +12,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Activity, Edit, Trash2, Clock, Flame } from "lucide-react";
+import {
+  Activity,
+  Bike,
+  Dumbbell,
+  Waves,
+  Footprints,
+  PersonStanding,
+  Trophy,
+  CircleDot,
+  Music,
+  Mountain,
+  Hand,
+  Circle,
+  Edit,
+  type LucideIcon,
+} from "lucide-react";
 import { ActivityEditModal } from "@/components/ui/activity-edit-modal";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage, getStartOfDay } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
@@ -31,6 +45,27 @@ interface ActivityFormData {
   caloriesBurned?: string;
 }
 
+const ACTIVITY_ICONS: Record<string, LucideIcon> = {
+  Running: Activity,
+  Cycling: Bike,
+  "Weight Training": Dumbbell,
+  Swimming: Waves,
+  Walking: Footprints,
+  Yoga: PersonStanding,
+  Tennis: Trophy,
+  Basketball: CircleDot,
+  Soccer: CircleDot,
+  Dancing: Music,
+  Hiking: Mountain,
+  Boxing: Hand,
+  Climbing: Mountain,
+  Other: Circle,
+};
+
+function getActivityIcon(type: string) {
+  return ACTIVITY_ICONS[type] ?? Circle;
+}
+
 export default function ActivityPage() {
   const { data: session, status } = useSession();
   const router = useLocalizedRouter();
@@ -38,11 +73,11 @@ export default function ActivityPage() {
   const { t } = useTranslations("activity");
   const { t: tCommon } = useTranslations("common");
   const dateLocale = useDateLocale();
-  
+
   // Get date from URL parameter or default to today
   const dateParam = searchParams.get('date');
   const initialDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
-  
+
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showSuccess, setShowSuccess] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
@@ -67,6 +102,9 @@ export default function ActivityPage() {
 
   // Watch the timestamp field to update selectedDate when it changes
   const watchedTimestamp = watch("localDateTime");
+  const watchedActivityType = watch("activityType");
+  const watchedIntensity = watch("intensity");
+
   useEffect(() => {
     if (watchedTimestamp) {
       const timestampDate = new Date(watchedTimestamp);
@@ -74,8 +112,14 @@ export default function ActivityPage() {
     }
   }, [watchedTimestamp]);
 
+  // Register activityType and intensity manually so we can drive them from custom UI
+  useEffect(() => {
+    register("activityType", { required: t("activityTypeRequired") });
+    register("intensity", { required: t("intensityRequired") });
+  }, [register, t]);
+
   const utils = api.useContext();
-  
+
   // Get available activity types
   const { data: activityTypes = [] } = api.activity.getActivityTypes.useQuery(
     undefined,
@@ -85,7 +129,7 @@ export default function ActivityPage() {
   const createActivityEntry = api.activity.create.useMutation({
     onSuccess: () => {
       reset({
-        activityType: "",
+        activityType: "Weight Training",
         description: "",
         duration: "",
         intensity: "moderate",
@@ -140,7 +184,7 @@ export default function ActivityPage() {
   const onSubmit = (data: ActivityFormData) => {
     // Convert local time to UTC for storage using shared utility
     const localDateTime = convertLocalToUTCForStorage(data.localDateTime);
-    
+
     createActivityEntry.mutate({
       activityType: data.activityType,
       description: data.description,
@@ -170,7 +214,7 @@ export default function ActivityPage() {
   if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{tCommon("loading")}</div>
+        <div className="text-center text-muted">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -184,28 +228,27 @@ export default function ActivityPage() {
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
-  const getIntensityColor = (intensity: string) => {
-    switch (intensity) {
-      case "low": return "bg-green-100 text-green-800";
-      case "moderate": return "bg-yellow-100 text-yellow-800";
-      case "high": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
+  const intensityLabel = (intensity: string) => {
+    if (intensity === "low") return t("low");
+    if (intensity === "moderate") return t("moderate");
+    if (intensity === "high") return t("high");
+    return intensity;
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-10 md:py-14 max-w-4xl">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-10">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
-            <p className="text-gray-600">
+            <p className="text-micro text-muted mb-3">{t("logActivityDesc")}</p>
+            <h1 className="font-display text-h1 text-ink mb-2">{t("title")}</h1>
+            <p className="text-muted">
               {formatDate(selectedDate, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
-              {!isToday && <span className="ml-2 text-amber-600 font-medium">{tCommon("pastDate")}</span>}
+              {!isToday && <span className="ml-2 text-iron">· {tCommon("pastDate")}</span>}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <LanguageSwitcher />
             <Button variant="outline" onClick={() => router.push("/dashboard")}>
               {tCommon("backToDashboard")}
@@ -214,153 +257,180 @@ export default function ActivityPage() {
         </div>
       </div>
 
-      {/* Calorie Balance Card */}
+      {/* Calorie Balance — pillar pattern */}
       {calorieBalance && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Flame className="h-4 w-4" />
-              {t("dailyCalorieBalance")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600">{t("consumed")}</div>
-                  <div className="text-lg font-bold text-blue-600">{calorieBalance.caloriesConsumed}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600">{t("burned")}</div>
-                  <div className="text-lg font-bold text-orange-600">{calorieBalance.totalCaloriesBurned}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600">{t("balance")}</div>
-                  <div className={`text-lg font-bold ${calorieBalance.isDeficit ? 'text-green-600' : 'text-red-600'}`}>
-                    {calorieBalance.isDeficit ? '-' : '+'}{Math.abs(calorieBalance.calorieBalance)}
-                  </div>
-                </div>
+        <div className="mb-10 border-t border-b border-hairline py-8">
+          <p className="text-micro text-muted mb-6">{t("dailyCalorieBalance")}</p>
+          <div className="grid grid-cols-3 gap-6 md:gap-10">
+            <div>
+              <div className="font-display tnum text-data-xl text-ink leading-none">
+                {calorieBalance.caloriesConsumed.toLocaleString()}
               </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-500">
-                  {calorieBalance.isDeficit ? t("deficit") : t("surplus")}
-                </div>
+              <div className="text-micro text-muted mt-3">{t("consumed")}</div>
+            </div>
+            <div>
+              <div className="font-display tnum text-data-xl text-ink leading-none">
+                {calorieBalance.totalCaloriesBurned.toLocaleString()}
+              </div>
+              <div className="text-micro text-muted mt-3">{t("burned")}</div>
+            </div>
+            <div>
+              <div className={`font-display tnum text-data-xl leading-none ${calorieBalance.isDeficit ? 'text-iron' : 'text-ink'}`}>
+                {calorieBalance.isDeficit ? '−' : '+'}
+                {Math.abs(calorieBalance.calorieBalance).toLocaleString()}
+              </div>
+              <div className="text-micro text-muted mt-3">
+                {calorieBalance.isDeficit ? t("deficit") : t("surplus")}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Success Message */}
       {showSuccess && (
-        <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+        <div className="mb-8 border border-hairline-strong bg-surface px-4 py-3 text-sm text-ink">
           {t("activityLoggedSuccess")}
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 gap-10">
         {/* Log Activity Form */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              {t("logActivity")}
-            </CardTitle>
-            <CardDescription>
-              {t("logActivityDesc")}
-            </CardDescription>
+            <CardTitle>{t("logActivity")}</CardTitle>
+            <CardDescription>{t("logActivityDesc")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Date and Time */}
               <div className="space-y-2">
-                <Label htmlFor="localDateTime">{t("dateAndTime")}</Label>
+                <Label htmlFor="localDateTime" className="text-micro text-muted">
+                  {t("dateAndTime")}
+                </Label>
                 <Input
                   {...register("localDateTime", { required: t("dateAndTimeRequired") })}
                   type="datetime-local"
                   id="localDateTime"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {errors.localDateTime && (
-                  <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
+                  <p className="text-iron text-sm mt-1">{errors.localDateTime.message}</p>
                 )}
-                <p className="text-xs text-gray-500">
-                  {t("dateAndTimeHint")}
-                </p>
+                <p className="text-xs text-muted-2">{t("dateAndTimeHint")}</p>
               </div>
 
-              {/* Activity Type */}
-              <div>
-                <Label htmlFor="activityType">{t("activityType")}</Label>
-                <select
-                  id="activityType"
-                  {...register("activityType", { required: t("activityTypeRequired") })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">{t("selectActivityType")}</option>
-                  {activityTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+              {/* Activity Type — Lucide-icon rows */}
+              <div className="space-y-2">
+                <Label className="text-micro text-muted">{t("activityType")}</Label>
+                <div role="radiogroup" className="border-t border-hairline">
+                  {activityTypes.map((type) => {
+                    const Icon = getActivityIcon(type);
+                    const selected = watchedActivityType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() =>
+                          setValue("activityType", type, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                        className={`group w-full flex items-center gap-3 py-3 px-1 border-b border-hairline text-left transition-colors ${
+                          selected ? "text-ink" : "text-muted hover:text-ink"
+                        }`}
+                      >
+                        <Icon
+                          className={`h-4 w-4 shrink-0 ${selected ? "text-ink" : "text-muted-2 group-hover:text-ink"}`}
+                          strokeWidth={1.5}
+                        />
+                        <span className={`text-sm flex-1 ${selected ? "font-medium text-ink" : ""}`}>
+                          {type}
+                        </span>
+                        {selected && (
+                          <span aria-hidden className="text-micro text-iron">●</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
                 {errors.activityType && (
-                  <p className="text-red-500 text-sm mt-1">{errors.activityType.message}</p>
+                  <p className="text-iron text-sm mt-1">{errors.activityType.message}</p>
                 )}
               </div>
 
               {/* Description */}
-              <div>
-                <Label htmlFor="description">{t("description")}</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-micro text-muted">
+                  {t("description")}
+                </Label>
                 <Input
                   id="description"
                   placeholder={t("descriptionPlaceholder")}
                   {...register("description", { required: t("descriptionRequired") })}
                 />
                 {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+                  <p className="text-iron text-sm mt-1">{errors.description.message}</p>
                 )}
               </div>
 
-              {/* Duration and Intensity */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="duration">{t("duration")}</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    min="1"
-                    placeholder="30"
-                    {...register("duration", { 
-                      required: t("durationRequired"),
-                      min: { value: 1, message: t("durationMin") }
-                    })}
-                  />
-                  {errors.duration && (
-                    <p className="text-red-500 text-sm mt-1">{errors.duration.message}</p>
-                  )}
+              {/* Duration */}
+              <div className="space-y-2">
+                <Label htmlFor="duration" className="text-micro text-muted">
+                  {t("duration")}
+                </Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  placeholder="30"
+                  {...register("duration", {
+                    required: t("durationRequired"),
+                    min: { value: 1, message: t("durationMin") },
+                  })}
+                />
+                {errors.duration && (
+                  <p className="text-iron text-sm mt-1">{errors.duration.message}</p>
+                )}
+              </div>
+
+              {/* Intensity */}
+              <div className="space-y-2">
+                <Label className="text-micro text-muted">{t("intensity")}</Label>
+                <div className="flex gap-2">
+                  {(["low", "moderate", "high"] as const).map((level) => {
+                    const selected = watchedIntensity === level;
+                    return (
+                      <Button
+                        key={level}
+                        type="button"
+                        variant={selected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() =>
+                          setValue("intensity", level, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                        aria-pressed={selected}
+                      >
+                        {intensityLabel(level)}
+                      </Button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <Label htmlFor="intensity">{t("intensity")}</Label>
-                  <select
-                    id="intensity"
-                    {...register("intensity", { required: t("intensityRequired") })}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="">{t("selectIntensity")}</option>
-                    <option value="low">{t("low")}</option>
-                    <option value="moderate">{t("moderate")}</option>
-                    <option value="high">{t("high")}</option>
-                  </select>
-                  {errors.intensity && (
-                    <p className="text-red-500 text-sm mt-1">{errors.intensity.message}</p>
-                  )}
-                </div>
+                {errors.intensity && (
+                  <p className="text-iron text-sm mt-1">{errors.intensity.message}</p>
+                )}
               </div>
 
               {/* Notes */}
-              <div>
-                <Label htmlFor="notes">{t("notes")}</Label>
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-micro text-muted">
+                  {t("notes")}
+                </Label>
                 <Textarea
                   id="notes"
                   placeholder={t("notesPlaceholder")}
@@ -369,28 +439,28 @@ export default function ActivityPage() {
               </div>
 
               {/* Calories Burned */}
-              <div>
-                <Label htmlFor="caloriesBurned">{t("caloriesBurned")}</Label>
+              <div className="space-y-2">
+                <Label htmlFor="caloriesBurned" className="text-micro text-muted">
+                  {t("caloriesBurned")}
+                </Label>
                 <Input
                   id="caloriesBurned"
                   type="number"
                   min="1"
                   placeholder={t("caloriesBurnedPlaceholder")}
-                  {...register("caloriesBurned", { 
-                    min: { value: 1, message: t("caloriesBurnedMin") }
+                  {...register("caloriesBurned", {
+                    min: { value: 1, message: t("caloriesBurnedMin") },
                   })}
                 />
                 {errors.caloriesBurned && (
-                  <p className="text-red-500 text-sm mt-1">{errors.caloriesBurned.message}</p>
+                  <p className="text-iron text-sm mt-1">{errors.caloriesBurned.message}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {t("caloriesBurnedHint")}
-                </p>
+                <p className="text-xs text-muted-2">{t("caloriesBurnedHint")}</p>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={createActivityEntry.isLoading}
               >
                 {createActivityEntry.isLoading ? t("loggingActivity") : t("logActivityButton")}
@@ -400,95 +470,95 @@ export default function ActivityPage() {
         </Card>
 
         {/* Activities Summary and List */}
-        <div className="space-y-6">
-          {/* Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {isToday ? t("todaysActivities") : t("activitiesForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
-              </CardTitle>
-              <CardDescription>{t("totalActivitySummary")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{totalCaloriesBurned}</div>
-                  <div className="text-sm text-gray-600">{t("caloriesBurnedLabel")}</div>
+        <div className="space-y-8">
+          {/* Summary — pillar pattern */}
+          <div className="border-t border-b border-hairline py-6">
+            <p className="text-micro text-muted mb-5">
+              {isToday
+                ? t("todaysActivities")
+                : t("activitiesForDate", { date: formatDate(selectedDate, "MMM d", { locale: dateLocale }) })}
+            </p>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="font-display tnum text-data-xl text-ink leading-none">
+                  {totalCaloriesBurned.toLocaleString()}
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{totalDuration}</div>
-                  <div className="text-sm text-gray-600">{t("minutesActive")}</div>
-                </div>
+                <div className="text-micro text-muted mt-3">{t("caloriesBurnedLabel")}</div>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <div className="font-display tnum text-data-xl text-ink leading-none">
+                  {totalDuration.toLocaleString()}
+                </div>
+                <div className="text-micro text-muted mt-3">{t("minutesActive")}</div>
+              </div>
+            </div>
+          </div>
 
-          {/* Activities List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("activities")}</CardTitle>
-              <CardDescription>
-                {dayActivities.length === 0 
+          {/* Activities List — meal-row pattern */}
+          <div>
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-display text-h2 text-ink">{t("activities")}</h2>
+              <span className="text-micro text-muted">
+                {dayActivities.length === 0
                   ? t("noActivitiesLogged")
                   : t("activitiesLogged", { count: dayActivities.length })}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-4">{t("loadingActivities")}</div>
-              ) : dayActivities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>{t("noActivitiesForDay")}</p>
-                  <p className="text-sm">{t("startLogging")}</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {dayActivities.map((entry: any) => (
-                    <div key={entry.id} className="border-b pb-4 last:border-b-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{entry.activityType}</h4>
-                            <Badge className={getIntensityColor(entry.intensity)}>
-                              {entry.intensity}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{entry.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "h:mm a", { locale: dateLocale })}
-                            </span>
-                            <span>{entry.duration} {t("min")}</span>
-                            <span className="flex items-center gap-1">
-                              <Flame className="h-3 w-3" />
-                              {entry.caloriesBurned} {t("cal")}
-                              {entry.caloriesManuallyEntered && (
-                                <span className="text-blue-600 font-medium">{t("tracker")}</span>
-                              )}
-                            </span>
-                          </div>
-                          {entry.notes && (
-                            <p className="text-xs text-gray-500 mt-1 italic">{entry.notes}</p>
-                          )}
+              </span>
+            </div>
+
+            {isLoading ? (
+              <div className="py-6 text-sm text-muted">{t("loadingActivities")}</div>
+            ) : dayActivities.length === 0 ? (
+              <div className="border-t border-hairline py-12 text-center">
+                <Activity
+                  className="h-6 w-6 mx-auto mb-3 text-muted-2"
+                  strokeWidth={1.5}
+                />
+                <p className="text-sm text-ink">{t("noActivitiesForDay")}</p>
+                <p className="text-xs text-muted mt-1">{t("startLogging")}</p>
+              </div>
+            ) : (
+              <div className="border-t border-hairline">
+                {dayActivities.map((entry: any) => {
+                  const Icon = getActivityIcon(entry.activityType);
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex items-center gap-4 py-3 border-b border-hairline"
+                    >
+                      <span className="font-mono tnum text-sm text-muted shrink-0 w-16">
+                        {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "HH:mm", { locale: dateLocale })}
+                      </span>
+                      <Icon
+                        className="h-4 w-4 shrink-0 text-muted-2"
+                        strokeWidth={1.5}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-ink truncate">
+                          {entry.activityType}
                         </div>
-                        <div className="flex gap-1 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditEntry(entry)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                        <div className="text-micro text-muted truncate">
+                          {entry.duration} {t("min")} · {intensityLabel(entry.intensity)}
+                          {entry.description ? ` · ${entry.description}` : ""}
                         </div>
                       </div>
+                      <span className="font-mono tnum text-sm text-ink shrink-0">
+                        {entry.caloriesBurned.toLocaleString()} {t("cal")}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditEntry(entry)}
+                        className="shrink-0"
+                        aria-label={t("editActivity")}
+                      >
+                        <Edit className="h-4 w-4" strokeWidth={1.5} />
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -504,4 +574,4 @@ export default function ActivityPage() {
       />
     </div>
   );
-} 
+}

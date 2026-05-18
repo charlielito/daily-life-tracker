@@ -5,13 +5,11 @@ import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { api } from "@/utils/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, Zap, Crown, ArrowLeft, CheckCircle, XCircle, AlertCircle } from "lucide-react";
-import { env } from "@/env.js";
+import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
@@ -33,20 +31,17 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
-    
+
     if (success === 'true') {
       setShowSuccessMessage(true);
-      // Refresh subscription status to get latest data
       refetch();
-      // Clean up URL after a delay
       setTimeout(() => {
         router.replace('/subscription', { scroll: false });
       }, 100);
     }
-    
+
     if (canceled === 'true') {
       setShowCancelMessage(true);
-      // Clean up URL after a delay
       setTimeout(() => {
         router.replace('/subscription', { scroll: false });
       }, 100);
@@ -100,8 +95,10 @@ export default function SubscriptionPage() {
   // Redirect to sign-in if not authenticated
   if (status === "loading") {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{tCommon("loading")}</div>
+      <div className="min-h-screen bg-paper text-ink">
+        <div className="max-w-5xl mx-auto px-6 md:px-10 py-16">
+          <p className="text-muted">{tCommon("loading")}</p>
+        </div>
       </div>
     );
   }
@@ -119,7 +116,7 @@ export default function SubscriptionPage() {
 
     setIsCreatingCheckout(true);
     const currentUrl = typeof window !== "undefined" ? window.location.origin : "";
-    
+
     createCheckoutSession.mutate({
       priceId: stripeConfig.premiumPriceId,
       successUrl: `${currentUrl}/subscription?success=true`,
@@ -137,214 +134,225 @@ export default function SubscriptionPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{tCommon("loading")}</div>
+      <div className="min-h-screen bg-paper text-ink">
+        <div className="max-w-5xl mx-auto px-6 md:px-10 py-16">
+          <p className="text-muted">{tCommon("loading")}</p>
+        </div>
       </div>
     );
   }
 
   const isUnlimited = subscriptionStatus?.hasUnlimitedAccess;
-  const aiUsagePercent = subscriptionStatus?.limits.aiCalculations 
-    ? (subscriptionStatus.monthlyAiUsage / subscriptionStatus.limits.aiCalculations) * 100 
+  const planStatusRaw =
+    subscriptionStatus?.subscriptionStatus?.toUpperCase() || tCommon("free").toUpperCase();
+  const aiUsagePercent = subscriptionStatus?.limits.aiCalculations
+    ? (subscriptionStatus.monthlyAiUsage / subscriptionStatus.limits.aiCalculations) * 100
     : 0;
   const uploadUsagePercent = subscriptionStatus?.limits.uploads
     ? (subscriptionStatus.monthlyUploads / subscriptionStatus.limits.uploads) * 100
     : 0;
 
+  const freeFeatures = [
+    t("freePlanAiCalculations"),
+    t("freePlanImageUploads"),
+    t("freePlanBasicTracking"),
+  ];
+
+  const premiumFeatures = [
+    t("unlimitedAi"),
+    t("unlimitedImageUploads"),
+    t("allTrackingFeatures"),
+    t("prioritySupport"),
+    t("futurePremiumFeatures"),
+  ];
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <LanguageSwitcher />
-          <Button variant="ghost" onClick={() => router.push("/dashboard")}>
+    <div className="min-h-screen bg-paper text-ink">
+      <div className="max-w-5xl mx-auto px-6 md:px-10 py-12 md:py-16">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-12">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t("backToDashboard")}
           </Button>
+          <LanguageSwitcher />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
-        <p className="text-gray-600">{t("subtitle")}</p>
-      </div>
 
-      {/* Success/Cancel Messages */}
-      <div className="mb-6 space-y-4">
-        {showSuccessMessage && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              <strong>{t("welcomeToPremium")}</strong> {t("subscriptionActivated")}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {showCancelMessage && (
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              <strong>{t("subscriptionCanceled")}</strong> {t("canUpgradeAnytime")}
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
+        {/* Header */}
+        <header className="mb-14">
+          <p className="text-micro text-muted mb-4">{t("title")}</p>
+          <h1 className="font-display text-h1 mb-3">
+            {isUnlimited ? t("premiumPlan") : t("freePlan")}
+          </h1>
+          <p className="text-muted text-base leading-relaxed max-w-2xl">
+            {isUnlimited ? t("unlimitedAccess") : t("basicFeatures")}
+          </p>
+          <div className="mt-6">
+            <Badge variant={isUnlimited ? "iron" : "outline"}>
+              {planStatusRaw}
+            </Badge>
+          </div>
+        </header>
 
-      <div className="grid gap-6">
-        {/* Current Status */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  {isUnlimited ? (
-                    <>
-                      <Crown className="h-5 w-5 text-yellow-500" />
-                      {t("premiumPlan")}
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-5 w-5 text-blue-500" />
-                      {t("freePlan")}
-                    </>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {isUnlimited 
-                    ? t("unlimitedAccess")
-                    : t("basicFeatures")
-                  }
-                </CardDescription>
-              </div>
-              <Badge variant={isUnlimited ? "default" : "secondary"}>
-                {subscriptionStatus?.subscriptionStatus?.toUpperCase() || tCommon("free").toUpperCase()}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isUnlimited ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-4 w-4" />
-                  <span>{t("unlimitedAiCalculations")}</span>
-                </div>
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-4 w-4" />
-                  <span>{t("unlimitedImageUploads")}</span>
-                </div>
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-4 w-4" />
-                  <span>{t("prioritySupport")}</span>
-                </div>
-                
-                {subscriptionStatus?.subscriptionStatus === "active" && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleManageSubscription}
-                    disabled={isCreatingPortal}
-                  >
-                    {isCreatingPortal ? t("openingPortal") : t("manageSubscription")}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* AI Usage */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">{t("aiMacroCalculations")}</span>
-                    <span className="text-sm text-gray-500">
-                      {subscriptionStatus?.monthlyAiUsage || 0} / {subscriptionStatus?.limits.aiCalculations}
-                    </span>
-                  </div>
-                  <Progress value={aiUsagePercent} className="mb-2" />
-                  <p className="text-xs text-gray-500">
-                    {t("calculationsRemaining", { count: subscriptionStatus?.limits.aiCalculations! - (subscriptionStatus?.monthlyAiUsage || 0) })}
-                  </p>
-                </div>
-
-                {/* Upload Usage */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">{t("imageUploads")}</span>
-                    <span className="text-sm text-gray-500">
-                      {subscriptionStatus?.monthlyUploads || 0} / {subscriptionStatus?.limits.uploads}
-                    </span>
-                  </div>
-                  <Progress value={uploadUsagePercent} className="mb-2" />
-                  <p className="text-xs text-gray-500">
-                    {t("uploadsRemaining", { count: subscriptionStatus?.limits.uploads! - (subscriptionStatus?.monthlyUploads || 0) })}
-                  </p>
-                </div>
-              </div>
+        {/* Success / Cancel notices */}
+        {(showSuccessMessage || showCancelMessage) && (
+          <div className="mb-10 space-y-4">
+            {showSuccessMessage && (
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
+                  <strong className="font-medium">{t("welcomeToPremium")}</strong>{" "}
+                  {t("subscriptionActivated")}
+                </AlertDescription>
+              </Alert>
             )}
-          </CardContent>
-        </Card>
+            {showCancelMessage && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong className="font-medium">{t("subscriptionCanceled")}</strong>{" "}
+                  {t("canUpgradeAnytime")}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
 
-        {/* Pricing Plans */}
+        {/* Current usage (only on free plan) */}
         {!isUnlimited && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("upgradeToPremium")}</CardTitle>
-              <CardDescription>{t("getUnlimitedAccess")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Free Plan */}
-                <div className="border rounded-lg p-6">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold">{t("freePlan")}</h3>
-                    <div className="text-2xl font-bold">$0<span className="text-sm font-normal">{t("perMonth")}</span></div>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("freePlanAiCalculations")}</span>
+          <section className="border-t border-hairline pt-10 mb-16">
+            <p className="text-micro text-muted mb-8">{t("currentUsage")}</p>
+            <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
+              <div>
+                <p className="text-micro text-muted mb-3">{t("aiMacroCalculations")}</p>
+                <div className="flex items-baseline justify-between mb-3">
+                  <span className="font-display tnum text-data-xl leading-none">
+                    {subscriptionStatus?.monthlyAiUsage || 0}
+                  </span>
+                  <span className="font-mono tnum text-sm text-muted">
+                    / {subscriptionStatus?.limits.aiCalculations}
+                  </span>
+                </div>
+                <Progress value={aiUsagePercent} className="mb-3" />
+                <p className="font-mono tnum text-xs text-muted">
+                  {t("calculationsRemaining", {
+                    count:
+                      subscriptionStatus?.limits.aiCalculations! -
+                      (subscriptionStatus?.monthlyAiUsage || 0),
+                  })}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-micro text-muted mb-3">{t("imageUploads")}</p>
+                <div className="flex items-baseline justify-between mb-3">
+                  <span className="font-display tnum text-data-xl leading-none">
+                    {subscriptionStatus?.monthlyUploads || 0}
+                  </span>
+                  <span className="font-mono tnum text-sm text-muted">
+                    / {subscriptionStatus?.limits.uploads}
+                  </span>
+                </div>
+                <Progress value={uploadUsagePercent} className="mb-3" />
+                <p className="font-mono tnum text-xs text-muted">
+                  {t("uploadsRemaining", {
+                    count:
+                      subscriptionStatus?.limits.uploads! -
+                      (subscriptionStatus?.monthlyUploads || 0),
+                  })}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Manage subscription (only on active premium) */}
+        {isUnlimited && subscriptionStatus?.subscriptionStatus === "active" && (
+          <section className="border-t border-hairline pt-10 mb-16">
+            <p className="text-micro text-muted mb-4">{t("billing")}</p>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <p className="text-base text-muted max-w-md">
+                {t("manageSubscriptionDesc")}
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleManageSubscription}
+                disabled={isCreatingPortal}
+              >
+                {isCreatingPortal ? t("openingPortal") : t("manageSubscription")}
+              </Button>
+            </div>
+          </section>
+        )}
+
+        {/* Plans comparison — only show when not unlimited */}
+        {!isUnlimited && (
+          <section className="border-t border-hairline pt-10 mb-16">
+            <p className="text-micro text-muted mb-2">{t("plans")}</p>
+            <h2 className="font-display text-h1 mb-10 max-w-2xl">
+              {t("upgradeToPremium")}
+            </h2>
+
+            <div className="grid md:grid-cols-2 md:divide-x divide-hairline">
+              {/* Free plan column */}
+              <div className="pb-8 md:pb-0 md:pr-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-display text-h2">{t("freePlan")}</h3>
+                  <Badge variant="outline">{tCommon("free").toUpperCase()}</Badge>
+                </div>
+                <div className="mb-8">
+                  <span className="font-display tnum text-data-xl leading-none">$0</span>
+                  <span className="font-mono tnum text-sm text-muted ml-2">
+                    {t("perMonth")}
+                  </span>
+                </div>
+                <ul className="border-t border-hairline">
+                  {freeFeatures.map((feature) => (
+                    <li
+                      key={feature}
+                      className="py-3 border-b border-hairline text-sm text-ink"
+                    >
+                      {feature}
                     </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("freePlanImageUploads")}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("freePlanBasicTracking")}</span>
-                    </li>
-                  </ul>
+                  ))}
+                </ul>
+                <div className="mt-8">
                   <Button variant="outline" disabled className="w-full">
                     {t("currentPlan")}
                   </Button>
                 </div>
+              </div>
 
-                {/* Premium Plan */}
-                <div className="border-2 border-blue-500 rounded-lg p-6 relative">
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-blue-500">{t("mostPopular")}</Badge>
-                  </div>
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold">{t("premiumPlan")}</h3>
-                    <div className="text-2xl font-bold">$7.99<span className="text-sm font-normal">{t("perMonth")}</span></div>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("unlimitedAi")}</span>
+              {/* Premium plan column */}
+              <div className="pt-8 md:pt-0 border-t border-hairline md:border-t-0 md:pl-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-display text-h2">{t("premiumPlan")}</h3>
+                  <Badge variant="iron">{t("mostPopular")}</Badge>
+                </div>
+                <div className="mb-8">
+                  <span className="font-display tnum text-data-xl leading-none">$7.99</span>
+                  <span className="font-mono tnum text-sm text-muted ml-2">
+                    {t("perMonth")}
+                  </span>
+                </div>
+                <ul className="border-t border-hairline">
+                  {premiumFeatures.map((feature) => (
+                    <li
+                      key={feature}
+                      className="py-3 border-b border-hairline text-sm text-ink"
+                    >
+                      {feature}
                     </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("unlimitedImageUploads")}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("allTrackingFeatures")}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("prioritySupport")}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{t("futurePremiumFeatures")}</span>
-                    </li>
-                  </ul>
-                  <Button 
-                    onClick={handleUpgrade} 
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <Button
+                    variant="iron"
+                    onClick={handleUpgrade}
                     className="w-full"
                     disabled={isCreatingCheckout}
                   >
@@ -352,37 +360,36 @@ export default function SubscriptionPage() {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         )}
 
         {/* FAQs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("faqs")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">{t("howDoLimitsWork")}</h4>
-              <p className="text-sm text-gray-600">
+        <section className="border-t border-hairline pt-10">
+          <p className="text-micro text-muted mb-2">{t("faqs")}</p>
+          <h2 className="font-display text-h2 mb-8">{t("faqsHeading")}</h2>
+          <div className="border-t border-hairline">
+            <div className="py-6 border-b border-hairline">
+              <h3 className="font-medium text-ink mb-2">{t("howDoLimitsWork")}</h3>
+              <p className="text-muted text-sm leading-relaxed max-w-2xl">
                 {t("limitsExplanation")}
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">{t("canCancelAnytime")}</h4>
-              <p className="text-sm text-gray-600">
+            <div className="py-6 border-b border-hairline">
+              <h3 className="font-medium text-ink mb-2">{t("canCancelAnytime")}</h3>
+              <p className="text-muted text-sm leading-relaxed max-w-2xl">
                 {t("cancelExplanation")}
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">{t("whatHappensToData")}</h4>
-              <p className="text-sm text-gray-600">
+            <div className="py-6 border-b border-hairline">
+              <h3 className="font-medium text-ink mb-2">{t("whatHappensToData")}</h3>
+              <p className="text-muted text-sm leading-relaxed max-w-2xl">
                 {t("downgradeExplanation")}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
     </div>
   );
-} 
+}

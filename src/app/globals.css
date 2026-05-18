@@ -4,48 +4,79 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* Editorial Medical — Light */
+    --paper: 50 27% 97%;            /* #FAFAF7 */
+    --paper-2: 47 25% 93%;          /* #F4F2EB */
+    --surface: 0 0% 100%;           /* #FFFFFF */
+    --ink: 60 5% 7%;                /* #111110 */
+    --ink-2: 60 4% 16%;             /* #2A2A27 */
+    --muted: 48 4% 43%;             /* #6F6E69 */
+    --muted-2: 45 6% 59%;           /* #9C9A91 */
+    --hairline: 47 18% 87%;         /* #E5E3DC */
+    --hairline-strong: 45 13% 78%;  /* #D0CDC2 */
+    --iron: 2 47% 47%;              /* #B0413E */
+    --iron-soft: 4 53% 90%;         /* #F1DAD8 */
+    --green: 150 41% 30%;           /* #2E6B4C */
+    --mustard: 39 86% 38%;          /* #B5790E */
+    --error: 0 56% 39%;             /* #9B2C2C */
+
+    /* shadcn aliases — point legacy tokens at the new palette */
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--paper);
+    --secondary: var(--paper-2);
+    --secondary-foreground: var(--ink);
+    --muted-foreground: var(--muted);
+    --accent: var(--paper-2);
+    --accent-foreground: var(--ink);
+    --destructive: var(--error);
+    --destructive-foreground: var(--paper);
+    --border: var(--hairline);
+    --input: var(--hairline);
+    --ring: var(--ink);
+    --radius: 0px; /* default to flat; per-component radius set in primitives */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Editorial Medical — Dark */
+    --paper: 60 6% 5%;              /* #0F0F0D */
+    --paper-2: 47 8% 10%;           /* #1A1A17 */
+    --surface: 60 6% 9%;            /* #161613 */
+    --ink: 48 21% 90%;              /* #EDEAE0 */
+    --ink-2: 47 16% 76%;            /* #C9C5B9 */
+    --muted: 42 6% 55%;             /* #928F84 */
+    --muted-2: 47 5% 36%;           /* #5E5B53 */
+    --hairline: 40 8% 16%;          /* #2A2925 */
+    --hairline-strong: 40 6% 21%;   /* #3A3833 */
+    --iron: 2 60% 62%;              /* #D86663 */
+    --iron-soft: 4 33% 17%;         /* #3A1E1D */
+    --green: 150 41% 38%;
+    --mustard: 39 86% 50%;
+    --error: 0 65% 50%;
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--paper);
+    --secondary: var(--paper-2);
+    --secondary-foreground: var(--ink);
+    --muted-foreground: var(--muted);
+    --accent: var(--paper-2);
+    --accent-foreground: var(--ink);
+    --destructive: var(--error);
+    --destructive-foreground: var(--paper);
+    --border: var(--hairline);
+    --input: var(--hairline);
+    --ring: var(--ink);
   }
 }
 
@@ -54,6 +85,21 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-paper text-ink;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
   }
-} 
+  /* Tabular numbers everywhere a number lives */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  /* Micro label utility (uppercase, tracked, 12px) */
+  .text-micro {
+    font-size: 11px;
+    line-height: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+}
