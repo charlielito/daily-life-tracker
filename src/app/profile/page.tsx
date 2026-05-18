@@ -5,21 +5,24 @@ import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Calculator, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { calculateAge } from "@/utils/ageUtils";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface ProfileFormData {
-  birthDate?: string; // HTML date inputs use string format
+  birthDate?: string;
   gender?: "male" | "female";
   heightCm?: number;
   activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
 }
+
+const selectClassName =
+  "flex h-10 w-full rounded border border-hairline bg-surface px-3.5 py-2 text-[15px] text-ink ring-offset-paper transition-colors placeholder:text-muted-2 focus-visible:outline-none focus-visible:border-ink focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -28,7 +31,6 @@ export default function ProfilePage() {
   const { t: tCommon } = useTranslations("common");
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Redirect to sign-in if not authenticated
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -37,17 +39,15 @@ export default function ProfilePage() {
     }
   }, [session, status, router]);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors }, watch } = useForm<ProfileFormData>();
+  const { register, handleSubmit, setValue, formState: { errors }, watch } = useForm<ProfileFormData>();
 
   const utils = api.useContext();
 
-  // Get current user profile
   const { data: userProfile, isLoading } = api.activity.getUserProfile.useQuery(
     undefined,
     { enabled: !!session }
   );
 
-  // Update profile mutation
   const updateProfile = api.activity.updateUserProfile.useMutation({
     onSuccess: () => {
       utils.activity.getUserProfile.invalidate();
@@ -60,13 +60,10 @@ export default function ProfilePage() {
     },
   });
 
-  // Set form values when profile data loads
   useEffect(() => {
     if (userProfile) {
-      // Temporarily bypass TypeScript error to see what's actually in the data
       const profile = userProfile as any;
       if (profile.birthDate) {
-        // Convert ISO date to YYYY-MM-DD format for HTML date input
         const date = new Date(profile.birthDate);
         const formattedDate = date.toISOString().split('T')[0];
         setValue("birthDate", formattedDate as any);
@@ -94,8 +91,10 @@ export default function ProfilePage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{tCommon("loading")}</div>
+      <div className="min-h-screen bg-paper text-ink">
+        <div className="max-w-4xl mx-auto px-6 md:px-10 py-16">
+          <p className="text-muted">{tCommon("loading")}</p>
+        </div>
       </div>
     );
   }
@@ -107,10 +106,9 @@ export default function ProfilePage() {
   const watchedData = watch();
   const canCalculateBMR = watchedData.birthDate && watchedData.gender && watchedData.heightCm;
 
-  // Calculate BMR preview
   let bmrPreview = 0;
   if (canCalculateBMR) {
-    const weight = 70; // Default weight for preview
+    const weight = 70;
     const age = watchedData.birthDate ? calculateAge(new Date(watchedData.birthDate)) : 0;
     if (watchedData.gender === "male") {
       bmrPreview = Math.round(10 * weight + 6.25 * (watchedData.heightCm || 0) - 5 * age + 5);
@@ -126,123 +124,123 @@ export default function ProfilePage() {
     very_active: { value: 1.725, label: t("veryActive") },
     extremely_active: { value: 1.9, label: t("extremelyActive") },
   });
-  
+
   const activityMultipliers = getActivityMultipliers();
 
   const tdeePreview = bmrPreview * (activityMultipliers[watchedData.activityLevel || "sedentary"]?.value || 1.2);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("title")}</h1>
-            <p className="text-gray-600">
-              {t("subtitle")}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <Button variant="outline" onClick={() => router.push("/dashboard")}>
-              {tCommon("backToDashboard")}
-            </Button>
-          </div>
+    <div className="min-h-screen bg-paper text-ink">
+      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12 md:py-16">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-12">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {tCommon("backToDashboard")}
+          </Button>
+          <LanguageSwitcher />
         </div>
-      </div>
 
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-          {t("profileUpdatedSuccess")}
-        </div>
-      )}
+        {/* Header */}
+        <header className="mb-14">
+          <p className="text-micro text-muted mb-4">{t("title")}</p>
+          <h1 className="font-display text-h1 mb-3">{t("personalInformation")}</h1>
+          <p className="text-muted text-base leading-relaxed max-w-2xl">
+            {t("subtitle")}
+          </p>
+        </header>
 
-      {/* Information Card */}
-      <Card className="mb-6 border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-800">
-            <Info className="h-5 w-5" />
-            {t("whyThisMatters")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-700 text-sm">
-          <ul className="space-y-2">
-            <li>• <strong>{t("bmrInfo")}</strong></li>
-            <li>• <strong>{t("tdeeInfo")}</strong></li>
-            <li>• <strong>{t("accurateTracking")}</strong></li>
-            <li>• <strong>{t("privacy")}</strong></li>
-          </ul>
-        </CardContent>
-      </Card>
+        {/* Success notice */}
+        {showSuccess && (
+          <div className="mb-10">
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>{t("profileUpdatedSuccess")}</AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Profile Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              {t("personalInformation")}
-            </CardTitle>
-            <CardDescription>
-              {t("personalInformationDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Birth Date */}
+        {/* Form */}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Identity section */}
+          <section className="border-t border-hairline pt-10 mb-12">
+            <p className="text-micro text-muted mb-8">{t("sectionIdentity")}</p>
+            <div className="space-y-8 max-w-xl">
               <div>
-                <Label htmlFor="birthDate">{t("dateOfBirth")}</Label>
+                <Label htmlFor="birthDate" className="block mb-2">
+                  {t("dateOfBirth")}
+                </Label>
                 <Input
+                  id="birthDate"
                   type="date"
                   {...register("birthDate")}
                 />
                 {errors.birthDate && (
-                  <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>
+                  <p className="text-iron text-sm mt-2">{errors.birthDate.message}</p>
                 )}
               </div>
 
-              {/* Gender */}
               <div>
-                <Label htmlFor="gender">{t("gender")}</Label>
+                <Label htmlFor="gender" className="block mb-2">
+                  {t("gender")}
+                </Label>
                 <select
+                  id="gender"
                   {...register("gender")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className={selectClassName}
                 >
                   <option value="">{t("selectGender")}</option>
                   <option value="male">{t("male")}</option>
                   <option value="female">{t("female")}</option>
                 </select>
               </div>
+            </div>
+          </section>
 
-              {/* Height */}
+          {/* Body metrics section */}
+          <section className="border-t border-hairline pt-10 mb-12">
+            <p className="text-micro text-muted mb-8">{t("sectionBodyMetrics")}</p>
+            <div className="space-y-8 max-w-xl">
               <div>
-                <Label htmlFor="heightCm">{t("heightCm")}</Label>
+                <Label htmlFor="heightCm" className="block mb-2">
+                  {t("heightCm")}
+                </Label>
                 <Input
+                  id="heightCm"
                   type="number"
                   min="100"
                   max="250"
                   placeholder="170"
-                  {...register("heightCm", { 
+                  {...register("heightCm", {
                     min: { value: 100, message: t("heightMin") },
                     max: { value: 250, message: t("heightMax") },
-                    valueAsNumber: true
+                    valueAsNumber: true,
                   })}
                 />
                 {errors.heightCm && (
-                  <p className="text-red-500 text-sm mt-1">{errors.heightCm.message}</p>
+                  <p className="text-iron text-sm mt-2">{errors.heightCm.message}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {t("heightHint")}
-                </p>
+                <p className="font-mono text-xs text-muted mt-2">{t("heightHint")}</p>
               </div>
+            </div>
+          </section>
 
-              {/* Activity Level */}
+          {/* Activity section */}
+          <section className="border-t border-hairline pt-10 mb-12">
+            <p className="text-micro text-muted mb-8">{t("sectionActivity")}</p>
+            <div className="space-y-8 max-w-xl">
               <div>
-                <Label htmlFor="activityLevel">{t("activityLevel")}</Label>
+                <Label htmlFor="activityLevel" className="block mb-2">
+                  {t("activityLevel")}
+                </Label>
                 <select
+                  id="activityLevel"
                   {...register("activityLevel")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className={selectClassName}
                 >
                   {Object.entries(activityMultipliers).map(([key, { label }]) => (
                     <option key={key} value={key}>
@@ -250,68 +248,108 @@ export default function ProfilePage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {t("activityLevelHint")}
-                </p>
+                <p className="text-xs text-muted mt-2">{t("activityLevelHint")}</p>
               </div>
+            </div>
+          </section>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+          {/* Save action */}
+          <div className="border-t border-hairline pt-8 mb-16">
+            <div className="flex items-center justify-end max-w-xl">
+              <Button
+                type="submit"
                 disabled={updateProfile.isLoading}
               >
                 {updateProfile.isLoading ? t("saving") : t("saveProfile")}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </form>
 
-        {/* BMR Calculator Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              {t("calorieCalculationPreview")}
-            </CardTitle>
-            <CardDescription>
-              {t("previewDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {canCalculateBMR ? (
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">{t("bmr")}</h4>
-                  <p className="text-2xl font-bold text-blue-600">{bmrPreview} {t("calPerDay")}</p>
-                  <p className="text-sm text-blue-600">{t("caloriesBurnedAtRest")}</p>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">{t("tdee")}</h4>
-                  <p className="text-2xl font-bold text-green-600">{Math.round(tdeePreview)} {t("calPerDay")}</p>
-                  <p className="text-sm text-green-600">
-                    {t("activityMultiplier", { multiplier: activityMultipliers[watchedData.activityLevel || "sedentary"]?.value })}
-                  </p>
-                </div>
+        {/* Calorie preview — editorial pillars */}
+        <section className="border-t border-hairline pt-10 mb-16">
+          <p className="text-micro text-muted mb-2">{t("calorieCalculationPreview")}</p>
+          <h2 className="font-display text-h2 mb-3">{t("previewDesc")}</h2>
 
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  <p><strong>{t("howItWorks")}</strong></p>
-                  <p>• {t("tdeeExplanation")}</p>
-                  <p>• {t("exerciseExplanation")}</p>
-                  <p>• {t("deficitExplanation")}</p>
-                  <p>• {t("surplusExplanation")}</p>
+          {canCalculateBMR ? (
+            <div className="grid md:grid-cols-2 md:divide-x divide-hairline mt-10">
+              <div className="pb-8 md:pb-0 md:pr-10">
+                <p className="text-micro text-muted mb-3">{t("bmr")}</p>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="font-display tnum text-data-xl leading-none">
+                    {bmrPreview}
+                  </span>
+                  <span className="font-mono tnum text-sm text-muted">
+                    {t("calPerDay")}
+                  </span>
                 </div>
+                <p className="text-sm text-muted leading-relaxed">
+                  {t("caloriesBurnedAtRest")}
+                </p>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Calculator className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{t("enterDetails")}</p>
-                <p className="text-sm">{t("seePreview")}</p>
+
+              <div className="pt-8 md:pt-0 border-t border-hairline md:border-t-0 md:pl-10">
+                <p className="text-micro text-muted mb-3">{t("tdee")}</p>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="font-display tnum text-data-xl leading-none">
+                    {Math.round(tdeePreview)}
+                  </span>
+                  <span className="font-mono tnum text-sm text-muted">
+                    {t("calPerDay")}
+                  </span>
+                </div>
+                <p className="text-sm text-muted leading-relaxed">
+                  {t("activityMultiplier", {
+                    multiplier: activityMultipliers[watchedData.activityLevel || "sedentary"]?.value,
+                  })}
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          ) : (
+            <p className="font-display italic text-h3 text-muted mt-6 max-w-xl">
+              {t("enterDetails")} {t("seePreview")}
+            </p>
+          )}
+        </section>
+
+        {/* How it works */}
+        <section className="border-t border-hairline pt-10 mb-16">
+          <p className="text-micro text-muted mb-2">{t("howItWorks")}</p>
+          <div className="border-t border-hairline">
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("tdeeExplanation")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("exerciseExplanation")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("deficitExplanation")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("surplusExplanation")}
+            </div>
+          </div>
+        </section>
+
+        {/* Why this matters */}
+        <section className="border-t border-hairline pt-10">
+          <p className="text-micro text-muted mb-2">{t("whyThisMatters")}</p>
+          <div className="border-t border-hairline">
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("bmrInfo")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("tdeeInfo")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("accurateTracking")}
+            </div>
+            <div className="py-4 border-b border-hairline text-sm text-ink">
+              {t("privacy")}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
-} 
+}
