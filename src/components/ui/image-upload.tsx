@@ -4,8 +4,9 @@ import { useState, useRef } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
-import { Camera, Upload, X, ImageIcon } from "lucide-react";
+import { Camera, Upload, X, AlertCircle } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 import { useTranslations } from "@/utils/useTranslations";
 
 interface ImageUploadProps {
@@ -26,9 +27,10 @@ export function ImageUpload({
   const { t } = useTranslations("common");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  
+
   const displayLabel = label || t("addPhoto");
 
   const uploadFile = async (file: File) => {
@@ -49,7 +51,7 @@ export function ImageUpload({
       if (!response.ok) {
         // Parse specific error messages from the API
         let errorMessage = t("uploadFailed");
-        
+
         if (data.error) {
           errorMessage = data.error;
         } else {
@@ -74,17 +76,20 @@ export function ImageUpload({
               errorMessage = t("serverError");
               break;
             default:
-              errorMessage = t("uploadFailedWithStatus", { status: response.status.toString(), statusText: response.statusText });
+              errorMessage = t("uploadFailedWithStatus", {
+                status: response.status.toString(),
+                statusText: response.statusText,
+              });
           }
         }
-        
+
         throw new Error(errorMessage);
       }
 
       onImageUpload(data.url);
     } catch (error) {
       console.error("Upload error:", error);
-      
+
       // Display the specific error message
       const errorMessage = error instanceof Error ? error.message : t("failedToUpload");
       setError(errorMessage);
@@ -93,22 +98,26 @@ export function ImageUpload({
     }
   };
 
+  const validateAndUpload = (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError(t("selectImageFile"));
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t("fileSizeLimit"));
+      return;
+    }
+
+    uploadFile(file);
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        setError(t("selectImageFile"));
-        return;
-      }
-
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError(t("fileSizeLimit"));
-        return;
-      }
-
-      uploadFile(file);
+      validateAndUpload(file);
     }
   };
 
@@ -128,14 +137,37 @@ export function ImageUpload({
     if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && !isUploading) setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (disabled || isUploading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      validateAndUpload(file);
+    }
+  };
+
   return (
     <div className="space-y-3">
-      <Label>{displayLabel}</Label>
-      
+      <Label className="text-micro text-muted">{displayLabel}</Label>
+
       {/* Current Image Display */}
       {currentImage && (
         <div className="relative inline-block">
-          <div className="relative w-48 h-36 rounded-lg overflow-hidden border border-gray-200">
+          <div className="relative w-48 h-36 overflow-hidden border border-hairline">
             <Image
               src={currentImage}
               alt={t("uploadedImage")}
@@ -150,36 +182,59 @@ export function ImageUpload({
             className="absolute -top-2 -right-2 rounded-full p-1 h-6 w-6"
             onClick={handleRemoveImage}
             disabled={disabled}
+            aria-label={t("uploadedImage")}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" strokeWidth={1.5} />
           </Button>
         </div>
       )}
 
-      {/* Upload Controls */}
+      {/* Drop zone + Upload Controls */}
       {!currentImage && (
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleFileUpload}
-            disabled={disabled || isUploading}
-            className="flex items-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            {isUploading ? t("uploading") : t("uploadPhoto")}
-          </Button>
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "border border-dashed border-hairline-strong p-6 text-center text-muted transition-colors",
+            isDragOver && "border-ink bg-paper-2 text-ink",
+            (disabled || isUploading) && "opacity-50"
+          )}
+        >
+          <Camera
+            className="mx-auto mb-3 h-5 w-5 text-muted-2"
+            strokeWidth={1.5}
+          />
+          <p className="text-sm">
+            {isUploading ? t("uploading") : t("uploadHelpText")}
+          </p>
+          <p className="mt-1 font-mono text-[11px] text-muted-2">
+            JPEG, PNG &middot; max 10MB
+          </p>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCameraCapture}
-            disabled={disabled || isUploading}
-            className="flex items-center gap-2"
-          >
-            <Camera className="h-4 w-4" />
-            {t("camera")}
-          </Button>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleFileUpload}
+              disabled={disabled || isUploading}
+            >
+              <Upload className="h-4 w-4" strokeWidth={1.5} />
+              {isUploading ? t("uploading") : t("uploadPhoto")}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCameraCapture}
+              disabled={disabled || isUploading}
+            >
+              <Camera className="h-4 w-4" strokeWidth={1.5} />
+              {t("camera")}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -202,43 +257,43 @@ export function ImageUpload({
 
       {/* Error Display */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+        <div className="border border-hairline bg-iron-soft/40 p-3">
           <div className="flex items-start gap-2">
-            <div className="flex-shrink-0">
-              <svg className="h-4 w-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <AlertCircle
+              className="h-4 w-4 flex-shrink-0 text-iron"
+              strokeWidth={1.5}
+            />
             <div className="flex-1">
-              <p className="text-sm text-red-800 font-medium">{t("uploadError")}</p>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <p className="text-sm font-medium text-ink">{t("uploadError")}</p>
+              <p className="mt-1 text-sm text-muted">{error}</p>
               {error.includes("limit") && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="mt-2 text-xs text-muted-2">
                   {t("upgradeForUnlimited")}
                 </p>
               )}
               {(error.includes("sign in") || error.includes("inicia sesión")) && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="mt-2 text-xs text-muted-2">
                   {t("refreshAndTryAgain")}
                 </p>
               )}
               {(error.includes("timed out") || error.includes("tiempo agotado")) && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="mt-2 text-xs text-muted-2">
                   {t("trySmallerImage")}
                 </p>
               )}
               {(error.includes("too large") || error.includes("demasiado grande")) && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="mt-2 text-xs text-muted-2">
                   {t("reduceImageQuality")}
                 </p>
               )}
               {(error.includes("Invalid image") || error.includes("inválido")) && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="mt-2 text-xs text-muted-2">
                   {t("tryNewPhoto")}
                 </p>
               )}
-              {(error.includes("processing failed") || error.includes("procesamiento falló")) && (
-                <p className="text-xs text-red-600 mt-2">
+              {(error.includes("processing failed") ||
+                error.includes("procesamiento falló")) && (
+                <p className="mt-2 text-xs text-muted-2">
                   {t("tryDifferentFormat")}
                 </p>
               )}
@@ -246,13 +301,6 @@ export function ImageUpload({
           </div>
         </div>
       )}
-
-      {/* Help Text */}
-      {!currentImage && !error && (
-        <p className="text-xs text-gray-500">
-          {t("uploadHelpText")}
-        </p>
-      )}
     </div>
   );
-} 
+}

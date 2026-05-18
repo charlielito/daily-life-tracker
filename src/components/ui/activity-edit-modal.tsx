@@ -6,8 +6,13 @@ import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
 import { Textarea } from "./textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
-import { X, Edit, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./dialog";
+import { Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { formatDate } from "@/utils/formatDate";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
@@ -34,6 +39,9 @@ interface ActivityFormData {
   caloriesBurned?: string;
 }
 
+const selectClassName =
+  "flex h-10 w-full rounded border border-hairline bg-surface px-3 py-2 text-sm text-ink ring-offset-paper placeholder:text-muted-2 focus:outline-none focus:border-ink focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50";
+
 export function ActivityEditModal({
   isOpen,
   onClose,
@@ -48,7 +56,7 @@ export function ActivityEditModal({
   const dateLocale = useDateLocale();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<ActivityFormData>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ActivityFormData>();
 
   // Reset form when entry changes
   useEffect(() => {
@@ -56,7 +64,7 @@ export function ActivityEditModal({
       // Convert localDateTime to datetime-local format for display
       const localDisplayTime = convertUTCToLocalDisplay(entry.localDateTime);
       const formattedTimestamp = format(localDisplayTime, "yyyy-MM-dd'T'HH:mm");
-      
+
       reset({
         activityType: entry.activityType || "",
         description: entry.description || "",
@@ -65,7 +73,7 @@ export function ActivityEditModal({
         localDateTime: formattedTimestamp,
         notes: entry.notes || "",
         caloriesBurned: entry.caloriesBurned?.toString() || "",
-      });
+      } as any);
     }
   }, [isOpen, entry, reset]);
 
@@ -79,9 +87,11 @@ export function ActivityEditModal({
       description: data.description,
       duration: parseInt(data.duration),
       intensity: data.intensity,
-      localDateTime: localDateTime, // Use the converted localDateTime
+      localDateTime: localDateTime,
       notes: data.notes,
-      caloriesBurned: data.caloriesBurned ? parseInt(data.caloriesBurned) : undefined,
+      caloriesBurned: data.caloriesBurned
+        ? parseInt(data.caloriesBurned)
+        : undefined,
     });
   };
 
@@ -90,194 +100,209 @@ export function ActivityEditModal({
     onDelete();
   };
 
-  if (!isOpen || !entry) return null;
+  if (!entry) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-2">
-            <Edit className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">{t("editActivity")}</h2>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("editActivity")}</DialogTitle>
+        </DialogHeader>
 
-        {/* Content */}
-        <div className="p-6">
-          {!showDeleteConfirm ? (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Date and Time */}
-              <div>
-                <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("whenDidYouDoActivity")}
-                </label>
-                <input
-                  {...register("localDateTime", { required: t("dateAndTimeRequired") })}
-                  type="datetime-local"
-                  id="localDateTime"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {errors.localDateTime && (
-                  <p className="text-red-500 text-sm mt-1">{errors.localDateTime.message}</p>
-                )}
-              </div>
+        {!showDeleteConfirm ? (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Date and Time */}
+            <div className="space-y-2">
+              <Label htmlFor="localDateTime" className="text-micro text-muted">
+                {t("whenDidYouDoActivity")}
+              </Label>
+              <Input
+                {...register("localDateTime", {
+                  required: t("dateAndTimeRequired"),
+                })}
+                type="datetime-local"
+                id="localDateTime"
+                className="font-mono tnum"
+              />
+              {errors.localDateTime && (
+                <p className="text-sm text-iron">{errors.localDateTime.message}</p>
+              )}
+            </div>
 
-              {/* Activity Type */}
-              <div>
-                <Label htmlFor="activityType">{t("activityType")}</Label>
-                <select
-                  {...register("activityType", { required: t("activityTypeRequired") })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">{t("selectActivityType")}</option>
-                  {activityTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                {errors.activityType && (
-                  <p className="text-red-500 text-sm mt-1">{errors.activityType.message}</p>
-                )}
-              </div>
+            {/* Activity Type */}
+            <div className="space-y-2">
+              <Label htmlFor="activityType" className="text-micro text-muted">
+                {t("activityType")}
+              </Label>
+              <select
+                {...register("activityType", {
+                  required: t("activityTypeRequired"),
+                })}
+                className={selectClassName}
+              >
+                <option value="">{t("selectActivityType")}</option>
+                {activityTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              {errors.activityType && (
+                <p className="text-sm text-iron">{errors.activityType.message}</p>
+              )}
+            </div>
 
-              {/* Description */}
-              <div>
-                <Label htmlFor="description">{t("description")}</Label>
-                <Input
-                  placeholder={t("descriptionPlaceholder")}
-                  {...register("description", { required: t("descriptionRequired") })}
-                />
-                {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
-                )}
-              </div>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-micro text-muted">
+                {t("description")}
+              </Label>
+              <Input
+                placeholder={t("descriptionPlaceholder")}
+                {...register("description", {
+                  required: t("descriptionRequired"),
+                })}
+              />
+              {errors.description && (
+                <p className="text-sm text-iron">{errors.description.message}</p>
+              )}
+            </div>
 
-              {/* Duration and Intensity */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="duration">{t("duration")}</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    {...register("duration", { 
-                      required: t("durationRequired"),
-                      min: { value: 1, message: t("durationMin") },
-                      valueAsNumber: true
-                    })}
-                  />
-                  {errors.duration && (
-                    <p className="text-red-500 text-sm mt-1">{errors.duration.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="intensity">{t("intensity")}</Label>
-                  <select
-                    {...register("intensity", { required: t("intensityRequired") })}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="">{t("selectIntensity")}</option>
-                    <option value="low">{t("low")}</option>
-                    <option value="moderate">{t("moderate")}</option>
-                    <option value="high">{t("high")}</option>
-                  </select>
-                  {errors.intensity && (
-                    <p className="text-red-500 text-sm mt-1">{errors.intensity.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <Label htmlFor="notes">{t("notes")}</Label>
-                <Textarea
-                  placeholder={t("notesPlaceholder")}
-                  {...register("notes")}
-                />
-              </div>
-
-              {/* Calories Burned */}
-              <div>
-                <Label htmlFor="caloriesBurned">{t("caloriesBurned")}</Label>
+            {/* Duration and Intensity */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration" className="text-micro text-muted">
+                  {t("duration")}
+                </Label>
                 <Input
                   type="number"
                   min="1"
-                  placeholder={t("caloriesBurnedPlaceholder")}
-                  {...register("caloriesBurned", { 
-                    min: { value: 1, message: t("caloriesBurnedMin") },
-                    valueAsNumber: true
+                  className="font-mono tnum"
+                  {...register("duration", {
+                    required: t("durationRequired"),
+                    min: { value: 1, message: t("durationMin") },
+                    valueAsNumber: true,
                   })}
                 />
-                {errors.caloriesBurned && (
-                  <p className="text-red-500 text-sm mt-1">{errors.caloriesBurned.message}</p>
+                {errors.duration && (
+                  <p className="text-sm text-iron">{errors.duration.message}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  {t("caloriesBurnedHint")}
-                </p>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-4">
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={isLoading}
+              <div className="space-y-2">
+                <Label htmlFor="intensity" className="text-micro text-muted">
+                  {t("intensity")}
+                </Label>
+                <select
+                  {...register("intensity", {
+                    required: t("intensityRequired"),
+                  })}
+                  className={selectClassName}
                 >
-                  {isLoading ? tCommon("saving") : tCommon("saveChanges")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-          ) : (
-            /* Delete Confirmation */
-            <div className="text-center py-6">
-              <div className="mb-4">
-                <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("deleteActivity")}</h3>
-                <p className="text-gray-600">
-                  {t("deleteActivityConfirmation")}
-                </p>
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">{entry.activityType}</p>
-                  <p className="text-sm text-gray-600">{entry.description}</p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(convertUTCToLocalDisplay(entry.localDateTime), "MMM d, h:mm a", { locale: dateLocale })} • {entry.duration} {t("min")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  {tCommon("cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  className="flex-1"
-                  disabled={isLoading}
-                >
-                  {isLoading ? t("deleting") : t("deleteActivity")}
-                </Button>
+                  <option value="">{t("selectIntensity")}</option>
+                  <option value="low">{t("low")}</option>
+                  <option value="moderate">{t("moderate")}</option>
+                  <option value="high">{t("high")}</option>
+                </select>
+                {errors.intensity && (
+                  <p className="text-sm text-iron">{errors.intensity.message}</p>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-micro text-muted">
+                {t("notes")}
+              </Label>
+              <Textarea
+                placeholder={t("notesPlaceholder")}
+                {...register("notes")}
+              />
+            </div>
+
+            {/* Calories Burned */}
+            <div className="space-y-2">
+              <Label htmlFor="caloriesBurned" className="text-micro text-muted">
+                {t("caloriesBurned")}
+              </Label>
+              <Input
+                type="number"
+                min="1"
+                className="font-mono tnum"
+                placeholder={t("caloriesBurnedPlaceholder")}
+                {...register("caloriesBurned", {
+                  min: { value: 1, message: t("caloriesBurnedMin") },
+                  valueAsNumber: true,
+                })}
+              />
+              {errors.caloriesBurned && (
+                <p className="text-sm text-iron">{errors.caloriesBurned.message}</p>
+              )}
+              <p className="text-xs text-muted-2">{t("caloriesBurnedHint")}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 border-t border-hairline pt-4">
+              <Button type="submit" className="flex-1" disabled={isLoading}>
+                {isLoading ? tCommon("saving") : tCommon("saveChanges")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                disabled={isLoading}
+              >
+                {tCommon("cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isLoading}
+                aria-label={t("deleteActivity")}
+              >
+                <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+              </Button>
+            </div>
+          </form>
+        ) : (
+          /* Delete Confirmation */
+          <div className="space-y-4">
+            <p className="text-sm text-muted">{t("deleteActivityConfirmation")}</p>
+            <div className="border-y border-hairline py-3">
+              <p className="text-micro text-muted">{entry.activityType}</p>
+              <p className="mt-1 text-sm text-ink">{entry.description}</p>
+              <p className="mt-1 font-mono tnum text-xs text-muted-2">
+                {formatDate(
+                  convertUTCToLocalDisplay(entry.localDateTime),
+                  "MMM d, h:mm a",
+                  { locale: dateLocale },
+                )}{" "}
+                &middot; {entry.duration} {t("min")}
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="flex-1"
+                disabled={isLoading}
+              >
+                {isLoading ? t("deleting") : t("deleteActivity")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+                disabled={isLoading}
+              >
+                {tCommon("cancel")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
-} 
+}

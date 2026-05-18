@@ -7,7 +7,13 @@ import { Input } from "./input";
 import { Label } from "./label";
 import { Textarea } from "./textarea";
 import { ImageUpload } from "./image-upload";
-import { X, Edit, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./dialog";
+import { Trash2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { convertUTCToLocalDisplay, convertLocalToUTCForStorage } from "@/utils/dateUtils";
 import { useTranslations } from "@/utils/useTranslations";
@@ -56,14 +62,16 @@ export function EditEntryModal({
   entry,
   type,
   isLoading = false,
-  error
+  error,
 }: EditEntryModalProps) {
   const { t } = useTranslations(type === "food" ? "food" : "health");
   const { t: tCommon } = useTranslations("common");
   const BRISTOL_SCALE = type === "health" ? getBristolScale(t) : [];
   const COMMON_COLORS = type === "health" ? getCommonColors(t) : [];
-  
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(entry?.imageUrl);
+
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | undefined>(
+    entry?.imageUrl,
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<any>();
@@ -72,11 +80,11 @@ export function EditEntryModal({
   useEffect(() => {
     if (isOpen && entry) {
       setUploadedImageUrl(entry.imageUrl);
-      
+
       // Convert localDateTime to datetime-local format for display
       const localDisplayTime = convertUTCToLocalDisplay(entry.localDateTime);
       const formattedTimestamp = format(localDisplayTime, "yyyy-MM-dd'T'HH:mm");
-      
+
       if (type === "food") {
         reset({
           description: entry.description || "",
@@ -102,7 +110,7 @@ export function EditEntryModal({
       // If no image is provided, description is required
       // If image is provided, description can be empty (AI will generate it)
       const description = data.description?.trim() || undefined;
-      
+
       onSave({
         id: entry.id,
         description: description,
@@ -135,99 +143,99 @@ export function EditEntryModal({
     setShowDeleteConfirm(false);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
             {type === "food" ? t("editMealEntry") : t("editHealthEntry")}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        {/* Content */}
-        <div className="p-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Error Display */}
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <div className="flex items-start gap-2">
-                  <div className="flex-shrink-0">
-                    <svg className="h-4 w-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-red-800 font-medium">
-                      {type === "food" ? t("macroCalculationError") : t("updateError")}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Error Display */}
+          {error && (
+            <div className="border border-hairline bg-iron-soft/40 p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle
+                  className="h-4 w-4 flex-shrink-0 text-iron"
+                  strokeWidth={1.5}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-ink">
+                    {type === "food" ? t("macroCalculationError") : t("updateError")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">{error.message}</p>
+                  {type === "food" && error.message.includes("limit") && (
+                    <p className="mt-2 text-xs text-muted-2">{t("limitReachedHint")}</p>
+                  )}
+                  {type === "food" && error.message.includes("detailed description") && (
+                    <p className="mt-2 text-xs text-muted-2">
+                      {t("detailedDescriptionHint")}
                     </p>
-                    <p className="text-sm text-red-700 mt-1">{error.message}</p>
-                    {type === "food" && error.message.includes("limit") && (
-                      <p className="text-xs text-red-600 mt-2">
-                        {t("limitReachedHint")}
-                      </p>
-                    )}
-                    {type === "food" && error.message.includes("detailed description") && (
-                      <p className="text-xs text-red-600 mt-2">
-                        {t("detailedDescriptionHint")}
-                      </p>
-                    )}
-                    {type === "food" && error.message.includes("network") && (
-                      <p className="text-xs text-red-600 mt-2">
-                        {t("networkHint")}
-                      </p>
-                    )}
-                    {type === "food" && error.message.includes("timeout") && (
-                      <p className="text-xs text-red-600 mt-2">
-                        {t("timeoutHint")}
-                      </p>
-                    )}
-                  </div>
+                  )}
+                  {type === "food" && error.message.includes("network") && (
+                    <p className="mt-2 text-xs text-muted-2">{t("networkHint")}</p>
+                  )}
+                  {type === "food" && error.message.includes("timeout") && (
+                    <p className="mt-2 text-xs text-muted-2">{t("timeoutHint")}</p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="localDateTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  {type === "food" ? t("whenDidYouEat") : t("whenOccurred")}
-                </label>
-                <input
-                  {...register("localDateTime", { required: t("dateAndTimeRequired") })}
-                  type="datetime-local"
-                  id="localDateTime"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {errors.localDateTime && (
-                  <p className="text-red-500 text-sm mt-1">{(errors.localDateTime as any)?.message}</p>
-                )}
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="localDateTime" className="text-micro text-muted">
+                {type === "food" ? t("whenDidYouEat") : t("whenOccurred")}
+              </Label>
+              <Input
+                {...register("localDateTime", {
+                  required: t("dateAndTimeRequired"),
+                })}
+                type="datetime-local"
+                id="localDateTime"
+                className="font-mono tnum"
+              />
+              {errors.localDateTime && (
+                <p className="text-sm text-iron">
+                  {(errors.localDateTime as any)?.message}
+                </p>
+              )}
+            </div>
 
             {type === "food" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="description">
-                    {t("foodDescription")} {uploadedImageUrl && <span className="text-gray-500 font-normal">{t("foodDescriptionOptional")}</span>}
+                  <Label htmlFor="description" className="text-micro text-muted">
+                    {t("foodDescription")}{" "}
+                    {uploadedImageUrl && (
+                      <span className="text-muted-2 normal-case tracking-normal">
+                        {t("foodDescriptionOptional")}
+                      </span>
+                    )}
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder={uploadedImageUrl ? t("foodDescriptionPlaceholder") : t("mealDescriptionPlaceholder")}
-                    {...register("description", { 
-                      required: !uploadedImageUrl ? t("foodDescriptionRequired") : false 
+                    placeholder={
+                      uploadedImageUrl
+                        ? t("foodDescriptionPlaceholder")
+                        : t("mealDescriptionPlaceholder")
+                    }
+                    {...register("description", {
+                      required: !uploadedImageUrl
+                        ? t("foodDescriptionRequired")
+                        : false,
                     })}
                   />
                   {errors.description && (
-                    <p className="text-red-500 text-sm">{(errors.description as any)?.message}</p>
+                    <p className="text-sm text-iron">
+                      {(errors.description as any)?.message}
+                    </p>
                   )}
                   {uploadedImageUrl && (
-                    <p className="text-xs text-gray-500">
-                      {t("photoHint")}
-                    </p>
+                    <p className="text-xs text-muted-2">{t("photoHint")}</p>
                   )}
                 </div>
 
@@ -242,11 +250,15 @@ export function EditEntryModal({
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="consistency">{t("bristolStoolScale")}</Label>
+                  <Label htmlFor="consistency" className="text-micro text-muted">
+                    {t("bristolStoolScale")}
+                  </Label>
                   <select
                     id="consistency"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register("consistency", { required: t("selectConsistency") })}
+                    className="flex h-10 w-full rounded border border-hairline bg-surface px-3 py-2 text-sm text-ink ring-offset-paper placeholder:text-muted-2 focus:outline-none focus:border-ink focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...register("consistency", {
+                      required: t("selectConsistency"),
+                    })}
                   >
                     {BRISTOL_SCALE.map((scale) => (
                       <option key={scale.value} value={scale.value}>
@@ -255,15 +267,19 @@ export function EditEntryModal({
                     ))}
                   </select>
                   {errors.consistency && (
-                    <p className="text-red-500 text-sm">{(errors.consistency as any)?.message}</p>
+                    <p className="text-sm text-iron">
+                      {(errors.consistency as any)?.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="color">{t("color")}</Label>
+                  <Label htmlFor="color" className="text-micro text-muted">
+                    {t("color")}
+                  </Label>
                   <select
                     id="color"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex h-10 w-full rounded border border-hairline bg-surface px-3 py-2 text-sm text-ink ring-offset-paper placeholder:text-muted-2 focus:outline-none focus:border-ink focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                     {...register("color", { required: t("selectColor") })}
                   >
                     {COMMON_COLORS.map((color) => (
@@ -273,12 +289,16 @@ export function EditEntryModal({
                     ))}
                   </select>
                   {errors.color && (
-                    <p className="text-red-500 text-sm">{(errors.color as any)?.message}</p>
+                    <p className="text-sm text-iron">
+                      {(errors.color as any)?.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="painLevel">{t("painLevel")}</Label>
+                  <Label htmlFor="painLevel" className="text-micro text-muted">
+                    {t("painLevel")}
+                  </Label>
                   <Input
                     id="painLevel"
                     type="range"
@@ -287,18 +307,24 @@ export function EditEntryModal({
                     {...register("painLevel", { valueAsNumber: true })}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-gray-500">
+                  <div className="flex justify-between text-xs text-muted-2">
                     <span>{t("noPain")}</span>
-                    <span className="font-medium text-gray-700">{t("current", { level: watch("painLevel") })}</span>
+                    <span className="font-mono tnum text-ink">
+                      {t("current", { level: watch("painLevel") })}
+                    </span>
                     <span>{t("severePain")}</span>
                   </div>
                   {(errors as any).painLevel && (
-                    <p className="text-red-500 text-sm">{(errors as any).painLevel.message}</p>
+                    <p className="text-sm text-iron">
+                      {(errors as any).painLevel.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">{t("notesOptional")}</Label>
+                  <Label htmlFor="notes" className="text-micro text-muted">
+                    {t("notesOptional")}
+                  </Label>
                   <Textarea
                     id="notes"
                     placeholder={t("notesPlaceholder")}
@@ -315,48 +341,54 @@ export function EditEntryModal({
                 />
               </>
             )}
-            </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button 
-                type="submit" 
-                className="flex-1" 
-                disabled={isLoading}
-              >
-                {isLoading ? tCommon("saving") : tCommon("saveChanges")}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                {tCommon("cancel")}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-                disabled={isLoading}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
-        </div>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 border-t border-hairline pt-4">
+            <Button type="submit" className="flex-1" disabled={isLoading}>
+              {isLoading ? tCommon("saving") : tCommon("saveChanges")}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              {tCommon("cancel")}
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              aria-label={tCommon("delete")}
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+            </Button>
+          </div>
+        </form>
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-              <h3 className="text-lg font-semibold mb-2">{tCommon("deleteEntry")}</h3>
-              <p className="text-gray-600 mb-4">
-                {type === "health" ? t("deleteHealthEntry") : type === "food" ? t("deleteMealEntry") : tCommon("deleteConfirmation")}
-              </p>
-              <div className="flex gap-2">
+          <Dialog
+            open={showDeleteConfirm}
+            onOpenChange={(open) => !open && setShowDeleteConfirm(false)}
+          >
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{tCommon("deleteEntry")}</DialogTitle>
+                <p className="mt-1 text-sm text-muted">
+                  {type === "health"
+                    ? t("deleteHealthEntry")
+                    : type === "food"
+                    ? t("deleteMealEntry")
+                    : tCommon("deleteConfirmation")}
+                </p>
+              </DialogHeader>
+              <div className="flex gap-2 border-t border-hairline pt-4">
                 <Button
                   variant="destructive"
                   onClick={handleDelete}
@@ -366,7 +398,7 @@ export function EditEntryModal({
                   {tCommon("delete")}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={isLoading}
                   className="flex-1"
@@ -374,10 +406,10 @@ export function EditEntryModal({
                   {tCommon("cancel")}
                 </Button>
               </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-} 
+}
