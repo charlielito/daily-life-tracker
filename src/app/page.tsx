@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { useEffect } from "react";
 import { LocalizedLink } from "@/components/ui/localized-link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/utils/useTranslations";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -27,8 +26,8 @@ export default function HomePage() {
   // Show loading while checking authentication
   if (status === "loading") {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{tCommon("loading")}</div>
+      <div className="min-h-screen bg-paper text-ink flex items-center justify-center">
+        <p className="text-muted">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -40,149 +39,59 @@ export default function HomePage() {
 
   // Show landing page only for unauthenticated users
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-end mb-4">
-        <LanguageSwitcher />
-      </div>
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">{t("title")}</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-paper text-ink">
+      <header className="border-b border-hairline">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+          <div className="font-display text-xl tracking-tight">
+            Daily Life <em className="not-italic text-iron">Tracker</em>
+          </div>
+          <LanguageSwitcher />
+        </div>
+      </header>
+
+      <section className="max-w-6xl mx-auto px-6 md:px-10 pt-24 md:pt-32 pb-20">
+        <p className="text-micro text-iron mb-6">{t("kicker")}</p>
+        <h1 className="font-display text-[clamp(48px,7vw,96px)] leading-[0.95] tracking-[-0.02em] max-w-4xl">
+          {t("title")} <em className="text-iron">{t("titleAccent")}</em>
+        </h1>
+        <p className="mt-8 text-lg text-muted max-w-2xl leading-relaxed">
           {t("subtitle")}
         </p>
-      </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🍽️ {t("foodTracking")}
-            </CardTitle>
-            <CardDescription>
-              {t("foodTrackingDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              • {t("aiPoweredMacro")}
-              • {t("dailyNutritionSummaries")}
-              • {t("weightTracking")}
-              • {t("mealHistory")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🏃‍♂️ {t("activityTracking")}
-            </CardTitle>
-            <CardDescription>
-              {t("activityTrackingDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              • {t("logSports")}
-              • {t("automaticCalorieBurn")}
-              • {t("activityIntensity")}
-              • {t("exerciseHistory")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🔥 {t("calorieBalance")}
-            </CardTitle>
-            <CardDescription>
-              {t("calorieBalanceDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              • {t("bmrCalculation")}
-              • {t("tdeeWithActivity")}
-              • {t("dailyDeficitSurplus")}
-              • {t("weightLossGain")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🏥 {t("healthMonitoring")}
-            </CardTitle>
-            <CardDescription>
-              {t("healthMonitoringDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">
-              • {t("bristolStoolScale")}
-              • {t("painLevelAssessment")}
-              • {t("colorConsistency")}
-              • {t("healthPatternAnalysis")}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* New Calorie Balance Feature Highlight */}
-      <div className="mb-8">
-        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-800 text-xl">
-              {t("smartCalorieBalance")}
-            </CardTitle>
-            <CardDescription className="text-orange-700">
-              {t("achieveWeightGoals")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-orange-700">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-2">{t("howItWorks")}</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• {t("setUpProfile")}</li>
-                  <li>• {t("logMeals")}</li>
-                  <li>• {t("trackWorkouts")}</li>
-                  <li>• {t("getAnalysis")}</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">{t("whatYouGet")}</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• {t("bmrExplanation")}</li>
-                  <li>• {t("tdeeExplanation")}</li>
-                  <li>• {t("activityCalories")}</li>
-                  <li>• {t("balanceExplanation")}</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="text-center space-y-4">
-        <div className="flex gap-4 justify-center">
+        <div className="mt-14 flex flex-wrap gap-3">
           <LocalizedLink href="/auth/signup">
-            <Button size="lg">
-              {t("getStartedFree")}
-            </Button>
+            <Button size="lg">{t("getStartedFree")}</Button>
           </LocalizedLink>
           <LocalizedLink href="/auth/signin">
-            <Button variant="outline" size="lg">
+            <Button size="lg" variant="outline">
               {t("signIn")}
             </Button>
           </LocalizedLink>
         </div>
-        
-        <p className="text-sm text-gray-500 text-center">
-          {t("signUpWithEmail")}
-        </p>
-      </div>
+        <p className="mt-6 text-sm text-muted">{t("signUpWithEmail")}</p>
+      </section>
+
+      <section className="border-t border-hairline">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 py-24 grid md:grid-cols-2 gap-x-16 gap-y-12">
+          <div className="md:col-span-2">
+            <p className="text-micro text-muted mb-4">{t("whatItDoes")}</p>
+            <h2 className="font-display text-h1 max-w-2xl">
+              {t("whatItDoesHead")}
+            </h2>
+          </div>
+          {[
+            { title: t("foodTracking"), body: t("foodTrackingDesc") },
+            { title: t("activityTracking"), body: t("activityTrackingDesc") },
+            { title: t("calorieBalance"), body: t("calorieBalanceDesc") },
+            { title: t("healthMonitoring"), body: t("healthMonitoringDesc") },
+          ].map((f) => (
+            <div key={f.title} className="border-t border-hairline pt-6">
+              <h3 className="font-display text-h2 mb-3">{f.title}</h3>
+              <p className="text-muted leading-relaxed">{f.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
-} 
+}

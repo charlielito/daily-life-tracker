@@ -6,7 +6,6 @@ import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { LocalizedLink } from "@/components/ui/localized-link";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,18 +82,21 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex justify-end mb-2">
-            <LanguageSwitcher />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">{t("createAccount")}</CardTitle>
-          <CardDescription className="text-center">
-            {t("joinUsToday")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen bg-paper text-ink">
+      <header className="border-b border-hairline">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+          <LocalizedLink href="/" className="font-display text-xl tracking-tight">
+            Daily Life <em className="not-italic text-iron">Tracker</em>
+          </LocalizedLink>
+          <LanguageSwitcher />
+        </div>
+      </header>
+
+      <div className="max-w-md mx-auto px-6 py-16 md:py-24">
+        <h1 className="font-display text-h1 mb-2">{t("createAccount")}</h1>
+        <p className="text-muted mb-10 leading-relaxed">{t("joinUsToday")}</p>
+
+        <div className="bg-surface border border-hairline p-8 space-y-4">
           {/* Google Sign Up Button */}
           <Button
             onClick={handleGoogleSignUp}
@@ -123,12 +125,12 @@ export default function SignUpPage() {
             {isGoogleLoading ? t("creatingAccount") : t("continueWithGoogle")}
           </Button>
 
-          <div className="relative">
+          <div className="relative py-2">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-hairline" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+            <div className="relative flex justify-center">
+              <span className="bg-surface px-3 text-micro text-muted">
                 {t("orContinueWithEmail")}
               </span>
             </div>
@@ -136,8 +138,8 @@ export default function SignUpPage() {
 
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-iron-soft border border-iron px-3 py-2.5">
+              <p className="text-iron text-sm leading-snug">{error}</p>
             </div>
           )}
 
@@ -148,16 +150,16 @@ export default function SignUpPage() {
                 id="name"
                 type="text"
                 placeholder="Your full name"
-                {...register("name", { 
+                {...register("name", {
                   required: t("nameRequired"),
                   minLength: {
                     value: 2,
-                    message: t("nameMinLength")
-                  }
+                    message: t("nameMinLength"),
+                  },
                 })}
               />
               {errors.name && (
-                <p className="text-red-500 text-sm">{errors.name.message}</p>
+                <p className="text-iron text-sm">{errors.name.message}</p>
               )}
             </div>
 
@@ -167,16 +169,16 @@ export default function SignUpPage() {
                 id="email"
                 type="email"
                 placeholder="your@email.com"
-                {...register("email", { 
+                {...register("email", {
                   required: t("emailRequired"),
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: t("validEmail")
-                  }
+                    message: t("validEmail"),
+                  },
                 })}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
+                <p className="text-iron text-sm">{errors.email.message}</p>
               )}
             </div>
 
@@ -186,16 +188,16 @@ export default function SignUpPage() {
                 id="password"
                 type="password"
                 placeholder="Create a password"
-                {...register("password", { 
+                {...register("password", {
                   required: t("passwordRequired"),
                   minLength: {
                     value: 6,
-                    message: t("passwordMinLength")
-                  }
+                    message: t("passwordMinLength"),
+                  },
                 })}
               />
               {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password.message}</p>
+                <p className="text-iron text-sm">{errors.password.message}</p>
               )}
             </div>
 
@@ -205,34 +207,39 @@ export default function SignUpPage() {
                 id="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
-                {...register("confirmPassword", { 
+                {...register("confirmPassword", {
                   required: t("confirmPasswordRequired"),
-                  validate: (value) => 
-                    value === watch("password") || t("passwordsDoNotMatch")
+                  validate: (value) =>
+                    value === watch("password") || t("passwordsDoNotMatch"),
                 })}
               />
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>
+                <p className="text-iron text-sm">{errors.confirmPassword.message}</p>
               )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading || isGoogleLoading || createUserMutation.isLoading}
             >
-              {isLoading || createUserMutation.isLoading ? t("creatingAccount") : t("createAccount")}
+              {isLoading || createUserMutation.isLoading
+                ? t("creatingAccount")
+                : t("createAccount")}
             </Button>
           </form>
+        </div>
 
-          <div className="text-center text-sm">
-            <span className="text-gray-600">{t("alreadyHaveAccount")} </span>
-            <LocalizedLink href="/auth/signin" className="text-blue-600 hover:underline">
-              {t("signIn")}
-            </LocalizedLink>
-          </div>
-        </CardContent>
-      </Card>
+        <p className="mt-8 text-sm text-muted text-center">
+          <span>{t("alreadyHaveAccount")} </span>
+          <LocalizedLink
+            href="/auth/signin"
+            className="text-ink underline underline-offset-4 decoration-hairline-strong hover:decoration-ink"
+          >
+            {t("signIn")}
+          </LocalizedLink>
+        </p>
+      </div>
     </div>
   );
-} 
+}

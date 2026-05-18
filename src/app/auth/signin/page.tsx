@@ -5,7 +5,6 @@ import { signIn, getSession } from "next-auth/react";
 import { useLocalizedRouter } from "@/utils/useLocalizedRouter";
 import { LocalizedLink } from "@/components/ui/localized-link";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,18 +65,21 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex justify-end mb-2">
-            <LanguageSwitcher />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">{t("signIn")}</CardTitle>
-          <CardDescription className="text-center">
-            {t("welcomeBack")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen bg-paper text-ink">
+      <header className="border-b border-hairline">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+          <LocalizedLink href="/" className="font-display text-xl tracking-tight">
+            Daily Life <em className="not-italic text-iron">Tracker</em>
+          </LocalizedLink>
+          <LanguageSwitcher />
+        </div>
+      </header>
+
+      <div className="max-w-md mx-auto px-6 py-16 md:py-24">
+        <h1 className="font-display text-h1 mb-2">{t("signIn")}</h1>
+        <p className="text-muted mb-10 leading-relaxed">{t("welcomeBack")}</p>
+
+        <div className="bg-surface border border-hairline p-8 space-y-4">
           {/* Google Sign In Button */}
           <Button
             onClick={handleGoogleSignIn}
@@ -106,12 +108,12 @@ export default function SignInPage() {
             {isGoogleLoading ? t("signingIn") : t("continueWithGoogle")}
           </Button>
 
-          <div className="relative">
+          <div className="relative py-2">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-hairline" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+            <div className="relative flex justify-center">
+              <span className="bg-surface px-3 text-micro text-muted">
                 {t("orContinueWithEmail")}
               </span>
             </div>
@@ -119,8 +121,8 @@ export default function SignInPage() {
 
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-iron-soft border border-iron px-3 py-2.5">
+              <p className="text-iron text-sm leading-snug">{error}</p>
             </div>
           )}
 
@@ -131,16 +133,16 @@ export default function SignInPage() {
                 id="email"
                 type="email"
                 placeholder="your@email.com"
-                {...register("email", { 
+                {...register("email", {
                   required: t("emailRequired"),
                   pattern: {
                     value: /^\S+@\S+$/i,
-                    message: t("validEmail")
-                  }
+                    message: t("validEmail"),
+                  },
                 })}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
+                <p className="text-iron text-sm">{errors.email.message}</p>
               )}
             </div>
 
@@ -150,36 +152,39 @@ export default function SignInPage() {
                 id="password"
                 type="password"
                 placeholder="Your password"
-                {...register("password", { 
+                {...register("password", {
                   required: t("passwordRequired"),
                   minLength: {
                     value: 6,
-                    message: t("passwordMinLength")
-                  }
+                    message: t("passwordMinLength"),
+                  },
                 })}
               />
               {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password.message}</p>
+                <p className="text-iron text-sm">{errors.password.message}</p>
               )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? t("signingIn") : t("signIn")}
             </Button>
           </form>
+        </div>
 
-          <div className="text-center text-sm">
-            <span className="text-gray-600">{t("dontHaveAccount")} </span>
-            <LocalizedLink href="/auth/signup" className="text-blue-600 hover:underline">
-              {t("signUp")}
-            </LocalizedLink>
-          </div>
-        </CardContent>
-      </Card>
+        <p className="mt-8 text-sm text-muted text-center">
+          <span>{t("dontHaveAccount")} </span>
+          <LocalizedLink
+            href="/auth/signup"
+            className="text-ink underline underline-offset-4 decoration-hairline-strong hover:decoration-ink"
+          >
+            {t("signUp")}
+          </LocalizedLink>
+        </p>
+      </div>
     </div>
   );
-} 
+}
